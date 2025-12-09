@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ APP_NAME }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #e0ecff, #f3f4f6 45%, #e5e7eb);
+      color: #111827;
+    }
+    .page-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background-color: #ffffff; border-radius: 20px; padding: 24px 28px 28px; max-width: 940px; width: 100%; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18); border: 1px solid #e5e7eb; }
+    .card-header { text-align: center; margin-bottom: 16px; }
+    h1 { font-size: 24px; margin: 0; letter-spacing: 0.02em; }
+    .tagline { font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .badge-row { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 4px 10px; border-radius: 999px; background-color: #e0ebff; color: #1d4ed8; }
+    .badge-secondary { background-color: #eef2ff; color: #374151; }
+    .section-title { font-size: 15px; font-weight: 600; margin-top: 18px; margin-bottom: 6px; }
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    input[type="file"], input[type="text"], input[type="email"], input[type="password"], textarea { display: block; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #d1d5db; background-color: #f9fafb; font-size: 13px; margin-bottom: 10px; font-family: inherit; transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease; }
+    input:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25); background-color: #ffffff; }
+    textarea { min-height: 80px; resize: vertical; }
+    .hint { font-size: 11px; color: #6b7280; margin-top: -4px; margin-bottom: 8px; }
+    .btn-primary { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 999px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35); margin-top: 10px; }
+    .btn-primary:hover { filter: brightness(0.96); }
+    .btn-secondary { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 500; cursor: pointer; background-color: #ffffff; color: #111827; margin-top: 8px; }
+    .messages { margin-bottom: 12px; }
+    .alert { padding: 8px 12px; border-radius: 10px; font-size: 12px; margin-bottom: 6px; }
+    .alert-success { background-color: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-error { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .summary-box { margin-top: 18px; padding: 12px 14px; border-radius: 12px; background-color: #f9fafb; border: 1px dashed #d1d5db; font-size: 13px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+    .summary-item { padding: 6px 8px; border-radius: 10px; background-color: #ffffff; border: 1px solid #e5e7eb; text-align: center; font-size: 12px; }
+    .summary-label { font-weight: 500; color: #6b7280; }
+    .summary-value { margin-top: 2px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+    th { background-color: #f3f4f6; font-weight: 600; }
+    .status-sent { color: #15803d; font-weight: 600; }
+    .status-error { color: #b91c1c; font-weight: 600; }
+    .table-title-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; margin-bottom: 4px; }
+    .table-title { font-size: 14px; font-weight: 600; }
+    .small { font-size: 11px; color: #6b7280; }
+    .inline-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .modal-pre { font-family:monospace; white-space:pre-wrap; }
+    .preview-row { padding:10px; border-radius:10px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:10px; }
+    .field-label { font-size:12px; color:#6b7280; margin-bottom:4px; }
+    .field-value { font-size:14px; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="card">
+      <div class="card-header">
+        <h1>{{ APP_NAME }}</h1>
+        <div class="tagline">
+          Upload Excel/CSV, optionally attach PDFs, and send customised emails to multiple recipients in one go.
+        </div>
+
+        <div class="badge-row">
+          <div class="badge">Designed for Lighthouse Communities Foundation</div>
+          <div class="badge badge-secondary">Developed by: Sampada Swami – HR Analytics Associate</div>
+        </div>
+      </div>
+
+      <div class="messages">
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% if msgs %}
+          {% for category, msg in msgs %}
+            <div class="alert {{ 'alert-success' if category=='success' else 'alert-error' }}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- PRODUCTION NOTE: consider adding CSRF token here if you use Flask-WTF -->
+      <form method="post" action="{{ url_for('index') }}" enctype="multipart/form-data" id="mainForm" accept-charset="utf-8" novalidate>
+        <div class="section-title">SMTP Email & App Password</div>
+        <label for="smtp_email">SMTP Email</label>
+        <input type="email" id="smtp_email" name="smtp_email" autocomplete="email" aria-label="SMTP Email" placeholder="officialemail@example.com" required value="{{ request.form.get('smtp_email','') or request.args.get('smtp_email','') }}">
+
+        <label for="smtp_pass">Gmail App Password</label>
+        <input type="password" id="smtp_pass" name="smtp_pass" autocomplete="new-password" aria-label="Gmail App Password" placeholder="Enter 16-digit App Password" required>
+        <div class="hint">Use your Gmail App Password (not your normal login password).</div>
+
+        <label for="sender_name">Sender Name</label>
+        <!-- Prefilled default value for Sender Name -->
+        <input type="text" id="sender_name" name="sender_name" placeholder="Lighthouse Communities Foundation" value="{{ request.form.get('sender_name', 'Lighthouse Communities Foundation') }}">
+        <div class="hint">This name will appear in the "From" field of the email.</div>
+
+        <div class="section-title">Step 1 — Upload Employees File</div>
+        <label for="employees_file">Employees file (.xlsx or .csv)</label>
+        <input type="file" id="employees_file" name="employees_file" accept=".xlsx,.csv" required aria-label="Employees file">
+        <div class="hint">Excel/CSV must contain an <strong>email</strong> column. Optional: name/emp_name column for {name} placeholder and PDF matching.</div>
+
+        <div class="section-title">Step 2 — Upload PDFs (optional)</div>
+        <label for="pdf_files">PDF files (multiple allowed)</label>
+        <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple aria-label="PDF files">
+        <div class="hint">When PDFs are uploaded and matching is enabled, the app will attach a PDF whose filename matches the employee name.</div>
+
+        <div style="margin-top:6px;">
+          <label style="display:inline-flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="skip_if_no_pdf" id="skip_if_no_pdf" {% if request.form.get('skip_if_no_pdf') == 'on' %}checked{% endif %}> 
+            <span class="small">Skip sending email if no matching PDF found (when using PDF uploads). If unchecked, email will be sent body-only.</span>
+          </label>
+        </div>
+
+        <div class="section-title">Step 3 — Email Content</div>
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name="subject" placeholder="Enter email subject" value="{{ request.form.get('subject','') }}">
+
+        <label for="body">Email Body</label>
+        <textarea id="body" name="body" placeholder="Type your email body here. You can use {name} if your Excel has a name / emp_name column.">{{ request.form.get('body','') }}</textarea>
+        <div class="hint">You can use placeholders like <code>{name}</code> (first name) and <code>{full_name}</code> (entire name). Use <code>Ctrl/Cmd + B</code> to make selected text bold (inserts <code>**bold**</code> — rendered in HTML email).</div>
+
+        <label for="signature">Email Signature (optional)</label>
+        <textarea id="signature" name="signature" placeholder="Regards,&#10;Your HR Team">{% if request.form.get('signature') %}{{ request.form.get('signature') }}{% elif prefilled_signature %}{{ prefilled_signature }}{% elif saved_signature %}{{ saved_signature }}{% endif %}</textarea>
+        <div class="hint">If empty, default will be used: "Regards, [Sender Name]". Use <code>Ctrl/Cmd + B</code> here too for bold.</div>
+
+        <div style="margin-top:6px;" class="inline-row">
+          <label style="display:inline-flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="use_saved_signature" id="use_saved_signature" {% if request.form.get('use_saved_signature') == 'on' %}checked{% endif %}> 
+            <span class="small">Use saved default signature for this SMTP Email (if any).</span>
+          </label>
+
+          <label style="display:inline-flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="save_default_signature" id="save_default_signature" {% if request.form.get('save_default_signature') == 'on' %}checked{% endif %}> 
+            <span class="small">Save this signature as default for this SMTP Email.</span>
+          </label>
+
+          {% if saved_signature %}
+            <div class="small" style="margin-left:6px;">Saved signature found for this SMTP email.</div>
+          {% endif %}
+        </div>
+
+        <div class="section-title">Step 4 — CC / BCC (optional)</div>
+        <label for="cc">CC</label>
+        <input type="text" id="cc" name="cc" placeholder="cc1@example.com, cc2@example.com" value="{{ request.form.get('cc','') }}">
+
+        <label for="bcc">BCC</label>
+        <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com" value="{{ request.form.get('bcc','') }}">
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button type="button" id="previewBtn" class="btn-secondary">👁️ Preview</button>
+          <!-- IMPORTANT: sendEmailsBtn is a button (not submit) so we control when the form is submitted -->
+          <button type="button" id="sendEmailsBtn" class="btn-primary">Send Emails</button>
+          <div style="margin-left:12px;" class="small">Preview shows first <input type="number" id="preview_count" name="max_preview" min="1" max="10" value="3" style="width:56px; padding:4px 6px; border-radius:8px; border:1px solid #d1d5db; background:#fff;"> recipients.</div>
+        </div>
+      </form>
+
+      {% if summary %}
+        <div class="summary-box">
+          <div><strong>Summary</strong></div>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-label">Total</div>
+              <div class="summary-value">{{ summary.total }}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Sent</div>
+              <div class="summary-value">{{ summary.sent }}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Errors</div>
+              <div class="summary-value">{{ summary.errors }}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Time</div>
+              <div class="summary-value">{{ summary.time_taken }}</div>
+            </div>
+          </div>
+
+          <div class="hint" style="margin-top:8px;">{{ summary.sent }} of {{ summary.total }} emails sent successfully.</div>
+
+          {% if report_id %}
+            <form action="{{ url_for('download_report', report_id=report_id) }}" method="get" target="_blank" rel="noopener">
+              <button type="submit" class="btn-secondary">⬇ Download Report (Excel)</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if report_rows %}
+        <div class="table-title-row">
+          <div class="table-title">Email Delivery Details</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Employee / Name</th>
+              <th>Email</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_rows %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ r.emp_name }}</td>
+              <td>{{ r.email }}</td>
+              <td>
+                {% if r.status == 'Sent' %}
+                  <span class="status-sent">Sent</span>
+                {% elif r.status.startswith('Error') or r.status.startswith('Skipped') %}
+                  <span class="status-error">{{ r.status }}</span>
+                {% else %}
+                  {{ r.status }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="max-width:900px; width:100%; background:#fff; border-radius:14px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;">Email Preview — Sample #1</h3>
+        <button id="closePreview" class="btn-secondary" style="padding:6px 10px;">Close</button>
+      </div>
+
+      <div id="previewContent" style="margin-top:12px; max-height:60vh; overflow:auto; border-top:1px solid #eee; padding-top:12px;"></div>
+
+      <div style="display:flex; gap:8px; margin-top:12px; justify-content:flex-end;">
+        <button id="sendAllBtn" class="btn-primary" style="display:none;">Send All</button>
+        <button id="sendSingleBtn" class="btn-secondary" style="display:none;">Send This Only</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const previewBtn = document.getElementById("previewBtn");
+  const previewModal = document.getElementById("previewModal");
+  const previewContent = document.getElementById("previewContent");
+  const closePreview = document.getElementById("closePreview");
+  const form = document.getElementById("mainForm");
+  const sendEmailsBtn = document.getElementById("sendEmailsBtn");
+  const sendAllBtn = document.getElementById("sendAllBtn");
+  const sendSingleBtn = document.getElementById("sendSingleBtn");
+
+  function showModal() { previewModal.style.display = "flex"; }
+  function hideModal() { previewModal.style.display = "none"; }
+
+  closePreview.addEventListener("click", hideModal);
+  previewModal.addEventListener("click", function(e) {
+    if (e.target === previewModal) hideModal();
+  });
+
+  function escapeHtml(str) {
+    if (!str && str !== 0) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Build a structured preview card (To, Cc, Bcc, Subject, Body, Signature, Attachments)
+  function buildPreviewCard(p) {
+    const to = escapeHtml(p.to || p.email || "");
+    const cc = (p.cc && p.cc.length) ? escapeHtml(p.cc.join(", ")) : "";
+    const bcc = (p.bcc && p.bcc.length) ? escapeHtml(p.bcc.join(", ")) : "";
+    const subject = escapeHtml(p.subject || "");
+    const signature = escapeHtml(p.signature || "");
+    const attachments = p.attachments && p.attachments.length ? p.attachments.map(a => `<div class="field-value">${escapeHtml(a)}</div>`).join("") : "<div class='field-value small'>No attachments</div>";
+    // prefer p.html if available; otherwise use plain body
+    const body_html = p.html ? p.html : `<pre style="white-space:pre-wrap; font-family:monospace;">${escapeHtml(p.body || "")}</pre>`;
+
+    return `
+      <div class="preview-row">
+        <div class="field-label">To</div>
+        <div class="field-value">${to}</div>
+
+        <div class="field-label">Cc</div>
+        <div class="field-value">${cc || '<span class="small">None</span>'}</div>
+
+        <div class="field-label">Bcc</div>
+        <div class="field-value">${bcc || '<span class="small">None</span>'}</div>
+
+        <div class="field-label">Subject</div>
+        <div class="field-value">${subject}</div>
+
+        <div class="field-label">Mail Body</div>
+        <div class="field-value">${body_html}</div>
+
+        <div class="field-label">Signature</div>
+        <div class="field-value"><pre style="white-space:pre-wrap; font-family:monospace;">${signature}</pre></div>
+
+        <div class="field-label">Attached File</div>
+        <div class="field-value">${attachments}</div>
+      </div>
+    `;
+  }
+
+  // Existing preview button - shows first N previews (no send)
+  previewBtn.addEventListener("click", async function() {
+    previewContent.innerHTML = "<div class='small'>Generating preview…</div>";
+    showModal();
+
+    const fd = new FormData(form);
+    try {
+      const resp = await fetch("/preview", { method: "POST", body: fd });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.error || 'Server error'}</div>`;
+        return;
+      }
+      const data = await resp.json();
+      if (!data.ok) {
+        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${data.error || 'Unknown'}</div>`;
+        return;
+      }
+      if (!data.previews || data.previews.length === 0) {
+        previewContent.innerHTML = "<div class='small'>No preview rows found in file.</div>";
+        return;
+      }
+      // show multiple previews
+      let html = "";
+      data.previews.forEach(function(p, i) {
+        // reuse buildPreviewCard but p might have slightly different fields
+        // normalize
+        const normalized = {
+          to: p.to || p.email || "",
+          cc: p.cc || [],
+          bcc: p.bcc || [],
+          subject: p.subject || "",
+          body: p.body || "",
+          html: p.html || "",
+          signature: p.signature || "",
+          attachments: p.attachments || []
+        };
+        html += buildPreviewCard(normalized);
+      });
+      previewContent.innerHTML = html;
+      sendAllBtn.style.display = 'none';
+      sendSingleBtn.style.display = 'none';
+    } catch (err) {
+      previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.message}</div>`;
+    }
+  });
+
+  // Send Emails flow: show detailed preview for first recipient then allow Send All / Send This Only
+  sendEmailsBtn.addEventListener("click", async function() {
+    previewContent.innerHTML = "<div class='small'>Generating sample preview…</div>";
+    showModal();
+
+    const fd = new FormData(form);
+    fd.set('max_preview', '1');
+
+    try {
+      const resp = await fetch("/preview", { method: "POST", body: fd });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.error || 'Server error'}</div>`;
+        sendAllBtn.style.display = 'none';
+        sendSingleBtn.style.display = 'none';
+        return;
+      }
+      const data = await resp.json();
+      if (!data.ok) {
+        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${data.error || 'Unknown'}</div>`;
+        sendAllBtn.style.display = 'none';
+        sendSingleBtn.style.display = 'none';
+        return;
+      }
+      if (!data.previews || data.previews.length === 0) {
+        previewContent.innerHTML = "<div class='small'>No preview rows found in file.</div>";
+        sendAllBtn.style.display = 'none';
+        sendSingleBtn.style.display = 'none';
+        return;
+      }
+
+      const p = data.previews[0];
+      const normalized = {
+        to: p.to || p.email || "",
+        cc: p.cc || [],
+        bcc: p.bcc || [],
+        subject: p.subject || "",
+        body: p.body || "",
+        html: p.html || "",
+        signature: p.signature || "",
+        attachments: p.attachments || []
+      };
+      previewContent.innerHTML = buildPreviewCard(normalized);
+
+      // show both buttons: Send All (existing) and Send This Only (new)
+      sendAllBtn.style.display = 'inline-flex';
+      sendSingleBtn.style.display = 'inline-flex';
+    } catch (err) {
+      previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.message}</div>`;
+      sendAllBtn.style.display = 'none';
+      sendSingleBtn.style.display = 'none';
+    }
+  });
+
+  // Send All -> add confirm_send=1 and submit
+  sendAllBtn.addEventListener('click', function() {
+    let inp = document.querySelector('input[name="confirm_send"]');
+    if (!inp) {
+      inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'confirm_send';
+      inp.value = '1';
+      form.appendChild(inp);
+    } else {
+      inp.value = '1';
+    }
+    hideModal();
+    form.submit();
+  });
+
+  // Send This Only -> set form action to /send_single and submit
+  sendSingleBtn.addEventListener('click', function() {
+    // create a temporary override for action
+    const originalAction = form.action || "";
+    form.action = "/send_single";
+    hideModal();
+    form.submit();
+    // restore action after a short delay
+    setTimeout(function(){ form.action = originalAction; }, 1000);
+  });
+
+  // Ctrl/Cmd+B handler for bold
+  function enableCtrlBForTextarea(textarea) {
+    textarea.addEventListener("keydown", function(e) {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+      if (ctrlKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        if (start !== null && end !== null) {
+          const selected = val.slice(start, end);
+          const before = val.slice(Math.max(0, start - 2), start);
+          const after = val.slice(end, Math.min(val.length, end + 2));
+          if (before === "**" && after === "**") {
+            textarea.value = val.slice(0, start - 2) + selected + val.slice(end + 2);
+            textarea.selectionStart = start - 2;
+            textarea.selectionEnd = end - 2;
+          } else {
+            textarea.value = val.slice(0, start) + "**" + selected + "**" + val.slice(end);
+            textarea.selectionStart = start + 2;
+            textarea.selectionEnd = end + 2;
+          }
+        }
+      }
+    });
+  }
+
+  const bodyTA = document.getElementById("body");
+  const sigTA = document.getElementById("signature");
+  if (bodyTA) enableCtrlBForTextarea(bodyTA);
+  if (sigTA) enableCtrlBForTextarea(sigTA);
+});
+</script>
+</body>
+</html>
