@@ -69,7 +69,7 @@
         </div>
       </div>
 
-      <div class="messages">
+      <div class="messages" aria-live="polite">
         {% with msgs = get_flashed_messages(with_categories=true) %}
         {% if msgs %}
           {% for category, msg in msgs %}
@@ -88,11 +88,16 @@
         <input type="email" id="smtp_email" name="smtp_email" autocomplete="email" aria-label="SMTP Email" placeholder="officialemail@example.com" required value="{{ request.form.get('smtp_email','') or request.args.get('smtp_email','') }}">
 
         <label for="smtp_pass">Gmail App Password</label>
-        <input type="password" id="smtp_pass" name="smtp_pass" autocomplete="new-password" aria-label="Gmail App Password" placeholder="Enter 16-digit App Password" required>
-        <div class="hint">Use your Gmail App Password (not your normal login password).</div>
+        <!-- password is required only when SendGrid is not configured on the server -->
+        <input type="password" id="smtp_pass" name="smtp_pass" autocomplete="new-password" aria-label="Gmail App Password" placeholder="Enter 16-digit App Password" {% if not SENDGRID_API_KEY %}required{% endif %}>
+        <div class="hint">
+          Use your Gmail App Password (not your normal login password).
+          {% if SENDGRID_API_KEY %}
+            <br><strong>Note:</strong> SMTP password is optional because SendGrid is configured on the server (SENDGRID_API_KEY present). If you plan to use SMTP instead, provide your App Password.
+          {% endif %}
+        </div>
 
         <label for="sender_name">Sender Name</label>
-        <!-- Prefilled default value for Sender Name -->
         <input type="text" id="sender_name" name="sender_name" placeholder="Lighthouse Communities Foundation" value="{{ request.form.get('sender_name', 'Lighthouse Communities Foundation') }}">
         <div class="hint">This name will appear in the "From" field of the email.</div>
 
