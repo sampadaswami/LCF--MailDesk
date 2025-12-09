@@ -8,10 +8,12 @@ import mimetypes
 import difflib
 import logging
 import json
+import base64
 from typing import List, Tuple, Optional
 import html as html_escape
 
 import pandas as pd
+import requests
 from flask import (
     Flask,
     render_template,
@@ -47,6 +49,12 @@ APP_NAME = "LCF - MailDesk"
 
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+
+# SendGrid (fallback) config
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "").strip()
+# Default from if using SendGrid and not providing `smtp_email` at runtime
+SENDGRID_DEFAULT_FROM = os.environ.get("SENDGRID_FROM", "")
+SENDGRID_DEFAULT_FROM_NAME = os.environ.get("SENDGRID_FROM_NAME", "LCF MailDesk")
 
 SIGNATURE_STORE_FILENAME = os.path.join(DATA_DIR, "signature_store.json")
 
@@ -271,6 +279,81 @@ def build_personal_html(
     return html
 
 
+def smtp_reachable(host: str = SMTP_HOST, port: int = SMTP_PORT, timeout: int = 5) -> bool:
+    """
+    Quick TCP connect test to see whether SMTP host:port is reachable from this host.
+    """
+    import socket
+    try:
+        s = socket.create_connection((host, port), timeout=timeout)
+        s.close()
+        return True
+    except Exception as e:
+        logger.info("SMTP not reachable (%s:%s): %s", host, port, e)
+        return False
+
+
+def send_via_sendgrid(
+    to_email: str,
+    subject: str,
+    plain_text: str,
+    html_text: str,
+    from_email: str,
+    from_name: str,
+    attachments: List[Tuple[str, bytes]],
+) -> str:
+    """
+    Send a single email via SendGrid HTTP API.
+    Returns "OK" or error string.
+    """
+    if not SENDGRID_API_KEY:
+        return "Error: No SendGrid API key configured"
+
+    url = "https://api.sendgrid.com/v3/mail/send"
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "personalizations": [
+            {"to": [{"email": to_email}], "subject": subject}
+        ],
+        "from": {"email": from_email, "name": from_name},
+        "content": [
+            {"type": "text/plain", "value": plain_text},
+            {"type": "text/html", "value": html_text},
+        ],
+    }
+
+    if attachments:
+        sg_attachments = []
+        for fname, fdata in attachments:
+            try:
+                b64 = base64.b64encode(fdata).decode("ascii")
+                maintype, subtype = guess_mime_type(fname)
+                sg_attachments.append({
+                    "content": b64,
+                    "type": f"{maintype}/{subtype}",
+                    "filename": fname,
+                })
+            except Exception as e:
+                logger.warning("SendGrid: failed encoding attachment %s: %s", fname, e)
+        if sg_attachments:
+            payload["attachments"] = sg_attachments
+
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=30)
+        if 200 <= r.status_code < 300:
+            return "OK"
+        else:
+            logger.exception("SendGrid API error: %s %s", r.status_code, r.text)
+            return f"Error: SendGrid {r.status_code} {r.text}"
+    except Exception as e:
+        logger.exception("SendGrid request failed: %s", e)
+        return f"Error: SendGrid request failed: {e}"
+
+
 def send_email_to_employee(
     server,
     to_email: str,
@@ -283,9 +366,10 @@ def send_email_to_employee(
     attachments: List[Tuple[str, bytes]],
     cc_list: List[str],
     bcc_list: List[str],
+    use_sendgrid=False,
 ) -> str:
     """
-    Sends a single email via the provided open SMTP server.
+    Sends a single email either via provided SMTP server OR via SendGrid (if use_sendgrid True).
     Returns "OK" on success or "Error: <desc>" on failure.
     """
     if not to_email or str(to_email).strip() == "":
@@ -293,13 +377,6 @@ def send_email_to_employee(
     to_email = str(to_email).strip()
     if not is_valid_email(to_email):
         return "Error: Invalid email"
-    msg = EmailMessage()
-    msg["Subject"] = sanitize_header_value(subject or "Notification")
-    from_name_clean = sanitize_header_value(sender_name)
-    msg["From"] = f"{from_name_clean} <{smtp_email}>"
-    msg["To"] = to_email
-    if cc_list:
-        msg["Cc"] = ", ".join([sanitize_header_value(c) for c in cc_list if c])
 
     full_body = build_personal_body(
         body_template=body_template,
@@ -308,7 +385,6 @@ def send_email_to_employee(
         sender_name=sender_name,
         emp_name=str(emp_name or ""),
     )
-    msg.set_content(full_body)
 
     try:
         html_body = build_personal_html(
@@ -318,9 +394,39 @@ def send_email_to_employee(
             sender_name=sender_name,
             emp_name=str(emp_name or ""),
         )
-        msg.add_alternative(html_body, subtype="html")
     except Exception as e:
-        logger.warning("Failed to add HTML alternative: %s", e)
+        logger.warning("Failed to build HTML body: %s", e)
+        html_body = None
+
+    if use_sendgrid:
+        # Determine sender email/name for SendGrid
+        from_email = SENDGRID_DEFAULT_FROM if SENDGRID_DEFAULT_FROM else smtp_email
+        from_name = SENDGRID_DEFAULT_FROM_NAME if SENDGRID_DEFAULT_FROM_NAME else sender_name or APP_NAME
+        return send_via_sendgrid(
+            to_email=to_email,
+            subject=subject,
+            plain_text=full_body,
+            html_text=html_body or full_body,
+            from_email=from_email,
+            from_name=from_name,
+            attachments=attachments,
+        )
+
+    # Else use SMTP server object provided
+    msg = EmailMessage()
+    msg["Subject"] = sanitize_header_value(subject or "Notification")
+    from_name_clean = sanitize_header_value(sender_name)
+    msg["From"] = f"{from_name_clean} <{smtp_email}>"
+    msg["To"] = to_email
+    if cc_list:
+        msg["Cc"] = ", ".join([sanitize_header_value(c) for c in cc_list if c])
+
+    msg.set_content(full_body)
+    if html_body:
+        try:
+            msg.add_alternative(html_body, subtype="html")
+        except Exception as e:
+            logger.warning("Failed to add HTML alternative for %s: %s", to_email, e)
 
     for fname, fdata in attachments:
         try:
@@ -328,7 +434,6 @@ def send_email_to_employee(
             msg.add_attachment(fdata, maintype=maintype, subtype=subtype, filename=fname)
         except Exception as e:
             logger.warning("Attachment add failed for %s: %s", fname, e)
-            # fallback
             try:
                 msg.add_attachment(fdata, maintype="application", subtype="octet-stream", filename=fname)
             except Exception as e2:
@@ -353,7 +458,7 @@ def send_email_to_employee(
 
 
 # -----------------------
-# Routes
+# Routes (unchanged behaviour + fallback)
 # -----------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -466,13 +571,21 @@ def index():
         report_rows = []
         use_pdf_matching = bool(pdf_store) and (name_col is not None)
 
-        try:
-            # NOTE: Do not log smtp_pass or other secrets.
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-                server.starttls()
-                # SECURITY: If using Gmail, require App Password (with 2FA) or use an email provider's API.
-                server.login(smtp_email, smtp_pass)
+        # Decide sending method: prefer SMTP if reachable, otherwise fallback to SendGrid if configured
+        smtp_ok = smtp_reachable(SMTP_HOST, SMTP_PORT)
+        using_sendgrid = False
+        if not smtp_ok:
+            if SENDGRID_API_KEY:
+                logger.info("SMTP not reachable; falling back to SendGrid API.")
+                using_sendgrid = True
+            else:
+                logger.error("SMTP not reachable and no SendGrid API key configured.")
+                flash("Cannot reach SMTP server from this host. Configure SENDGRID_API_KEY in environment to use SendGrid as fallback, or deploy where SMTP egress is allowed.", "error")
+                return redirect(url_for("index"))
 
+        try:
+            if using_sendgrid:
+                # No smtp server object; we call send_via_sendgrid per recipient
                 for idx, row in df.iterrows():
                     to_email = row.get(email_col, "")
                     emp_name = row.get(name_col, "") if name_col else ""
@@ -499,32 +612,87 @@ def index():
                     else:
                         attachments_for_emp = []
 
-                    try:
-                        status = send_email_to_employee(
-                            server=server,
-                            to_email=to_email,
-                            emp_name=emp_name,
-                            subject=subject,
-                            body_template=body_template,
-                            signature=signature_to_use,
-                            smtp_email=smtp_email,
-                            sender_name=sender_name,
-                            attachments=attachments_for_emp,
-                            cc_list=cc_list,
-                            bcc_list=bcc_list,
-                        )
-                        if status == "OK":
-                            sent += 1
-                            status_str = "Sent"
-                        else:
-                            errors += 1
-                            status_str = status
-                    except Exception as inner_e:
-                        logger.exception("Error sending to %s: %s", to_email, inner_e)
+                    status = send_email_to_employee(
+                        server=None,
+                        to_email=to_email,
+                        emp_name=emp_name,
+                        subject=subject,
+                        body_template=body_template,
+                        signature=signature_to_use,
+                        smtp_email=smtp_email,
+                        sender_name=sender_name,
+                        attachments=attachments_for_emp,
+                        cc_list=cc_list,
+                        bcc_list=bcc_list,
+                        use_sendgrid=True,
+                    )
+                    if status == "OK":
+                        sent += 1
+                        status_str = "Sent"
+                    else:
                         errors += 1
-                        status_str = f"Error: {inner_e}"
+                        status_str = status
 
                     report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+            else:
+                # Use SMTP server connection (existing behaviour)
+                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
+                    server.starttls()
+                    server.login(smtp_email, smtp_pass)
+
+                    for idx, row in df.iterrows():
+                        to_email = row.get(email_col, "")
+                        emp_name = row.get(name_col, "") if name_col else ""
+
+                        if not is_valid_email(to_email):
+                            errors += 1
+                            status_str = "Error: Invalid email"
+                            report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                            continue
+
+                        attachments_for_emp = []
+                        if use_pdf_matching:
+                            matched = find_matching_pdf(emp_name, pdf_store)
+                            if matched:
+                                attachments_for_emp = [matched]
+                            else:
+                                if skip_if_no_pdf:
+                                    errors += 1
+                                    status_str = "Skipped: No matching PDF for employee"
+                                    report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                                    continue
+                                else:
+                                    attachments_for_emp = []
+                        else:
+                            attachments_for_emp = []
+
+                        try:
+                            status = send_email_to_employee(
+                                server=server,
+                                to_email=to_email,
+                                emp_name=emp_name,
+                                subject=subject,
+                                body_template=body_template,
+                                signature=signature_to_use,
+                                smtp_email=smtp_email,
+                                sender_name=sender_name,
+                                attachments=attachments_for_emp,
+                                cc_list=cc_list,
+                                bcc_list=bcc_list,
+                                use_sendgrid=False,
+                            )
+                            if status == "OK":
+                                sent += 1
+                                status_str = "Sent"
+                            else:
+                                errors += 1
+                                status_str = status
+                        except Exception as inner_e:
+                            logger.exception("Error sending to %s: %s", to_email, inner_e)
+                            errors += 1
+                            status_str = f"Error: {inner_e}"
+
+                        report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
 
             elapsed = round(time.time() - start_time, 2)
             summary = {"total": total, "sent": sent, "errors": errors, "time_taken": f"{elapsed} sec"}
@@ -829,13 +997,22 @@ def send_single():
         sent = 0
         errors = 0
         report_rows = []
-        try:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-                server.starttls()
-                server.login(smtp_email, smtp_pass)
 
+        # decide whether to use SMTP or SendGrid
+        smtp_ok = smtp_reachable(SMTP_HOST, SMTP_PORT)
+        using_sendgrid = False
+        if not smtp_ok:
+            if SENDGRID_API_KEY:
+                using_sendgrid = True
+                logger.info("SMTP not reachable; using SendGrid for single-send fallback.")
+            else:
+                flash("Cannot reach SMTP server from this host. Configure SENDGRID_API_KEY in environment to use SendGrid as fallback.", "error")
+                return redirect(url_for("index"))
+
+        try:
+            if using_sendgrid:
                 status = send_email_to_employee(
-                    server=server,
+                    server=None,
                     to_email=to_email,
                     emp_name=emp_name,
                     subject=subject,
@@ -846,6 +1023,7 @@ def send_single():
                     attachments=attachments_for_emp,
                     cc_list=cc_list,
                     bcc_list=bcc_list,
+                    use_sendgrid=True,
                 )
                 if status == "OK":
                     sent = 1
@@ -853,8 +1031,33 @@ def send_single():
                 else:
                     errors = 1
                     status_str = status
+            else:
+                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
+                    server.starttls()
+                    server.login(smtp_email, smtp_pass)
 
-                report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                    status = send_email_to_employee(
+                        server=server,
+                        to_email=to_email,
+                        emp_name=emp_name,
+                        subject=subject,
+                        body_template=body_template,
+                        signature=signature_to_use,
+                        smtp_email=smtp_email,
+                        sender_name=sender_name,
+                        attachments=attachments_for_emp,
+                        cc_list=cc_list,
+                        bcc_list=bcc_list,
+                        use_sendgrid=False,
+                    )
+                    if status == "OK":
+                        sent = 1
+                        status_str = "Sent"
+                    else:
+                        errors = 1
+                        status_str = status
+
+            report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
 
             summary = {"total": 1, "sent": sent, "errors": errors, "time_taken": "single-send"}
             flash(f"Send single completed. Status: {status_str}", "success" if status_str == "Sent" else "error")
