@@ -1,211 +1,240 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
   <title>{{ APP_NAME }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #e0ecff, #f3f4f6 45%, #e5e7eb);
-      color: #111827;
+    /* (Styles mostly unchanged from your last version; only small additions for new buttons/preview) */
+    :root{
+      --bg: #fbfdff; --panel:#ffffff; --text:#0f172a; --muted:#6b7280;
+      --accent-1:#10b981; --accent-2:#059669; --success:#10b981; --danger:#b91c1c;
+      --info:#2563eb;
     }
-    .page-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .card { background-color: #ffffff; border-radius: 20px; padding: 24px 28px 28px; max-width: 940px; width: 100%; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18); border: 1px solid #e5e7eb; }
-    .card-header { text-align: center; margin-bottom: 16px; }
-    h1 { font-size: 24px; margin: 0; letter-spacing: 0.02em; }
-    .tagline { font-size: 13px; color: #6b7280; margin-top: 4px; }
-    .badge-row { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px; }
-    .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 4px 10px; border-radius: 999px; background-color: #e0ebff; color: #1d4ed8; }
-    .badge-secondary { background-color: #eef2ff; color: #374151; }
-    .section-title { font-size: 15px; font-weight: 600; margin-top: 18px; margin-bottom: 6px; }
-    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-    input[type="file"], input[type="text"], input[type="email"], input[type="password"], textarea { display: block; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #d1d5db; background-color: #f9fafb; font-size: 13px; margin-bottom: 10px; font-family: inherit; transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease; }
-    input:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25); background-color: #ffffff; }
-    textarea { min-height: 80px; resize: vertical; }
-    .hint { font-size: 11px; color: #6b7280; margin-top: -4px; margin-bottom: 8px; }
-    .btn-primary { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 999px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35); margin-top: 10px; }
-    .btn-primary:hover { filter: brightness(0.96); }
-    .btn-secondary { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 500; cursor: pointer; background-color: #ffffff; color: #111827; margin-top: 8px; }
-    .messages { margin-bottom: 12px; }
-    .alert { padding: 8px 12px; border-radius: 10px; font-size: 12px; margin-bottom: 6px; }
-    .alert-success { background-color: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
-    .alert-error { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-    .summary-box { margin-top: 18px; padding: 12px 14px; border-radius: 12px; background-color: #f9fafb; border: 1px dashed #d1d5db; font-size: 13px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
-    .summary-item { padding: 6px 8px; border-radius: 10px; background-color: #ffffff; border: 1px solid #e5e7eb; text-align: center; font-size: 12px; }
-    .summary-label { font-weight: 500; color: #6b7280; }
-    .summary-value { margin-top: 2px; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
-    th { background-color: #f3f4f6; font-weight: 600; }
-    .status-sent { color: #15803d; font-weight: 600; }
-    .status-error { color: #b91c1c; font-weight: 600; }
-    .table-title-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; margin-bottom: 4px; }
-    .table-title { font-size: 14px; font-weight: 600; }
-    .small { font-size: 11px; color: #6b7280; }
-    .inline-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .modal-pre { font-family:monospace; white-space:pre-wrap; }
-    .preview-row { padding:10px; border-radius:10px; background:#f9fafb; border:1px solid #e5e7eb; margin-bottom:10px; }
-    .field-label { font-size:12px; color:#6b7280; margin-bottom:4px; }
-    .field-value { font-size:14px; margin-bottom:8px; }
+    body.dark{ --bg:#0b0f12; --panel:#0b1113; --text:#e6eef6; --muted:#99aab3; --accent-1:#00c48c; --accent-2:#00a37f; --success:#00c48c; --danger:#f87171; --info:#60a5fa; background:linear-gradient(180deg,#071019 0%,#061017 60%); }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:var(--text);-webkit-font-smoothing:antialiased;background:var(--bg);}
+
+    .page-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:var(--bg);}
+    .card{width:100%;max-width:820px;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.02));border-radius:12px;padding:18px;box-shadow:0 18px 38px rgba(2,6,23,0.08);border:1px solid rgba(15,23,42,0.04);}
+
+    .card-header{text-align:center;margin-bottom:8px; position:relative; padding-bottom:12px;}
+    h1{font-size:20px;margin:0;display:inline-block;position:relative;color:var(--text);font-weight:800;}
+    .header-line{height:4px;width:44%;margin:10px auto 0;border-radius:999px;background: linear-gradient(90deg,var(--accent-1), var(--accent-2), rgba(255,255,255,0.06));box-shadow: 0 8px 30px rgba(0,0,0,0.18);position:relative;overflow:hidden;}
+    .header-line::before{content:"";position:absolute; inset:0; transform:translateX(-100%);background: linear-gradient(90deg, rgba(255,255,255,0.00), rgba(255,255,255,0.14), rgba(255,255,255,0.00));animation: slideGlow 2.2s linear infinite;mix-blend-mode: overlay;}
+    @keyframes slideGlow{0%{ transform:translateX(-100%);}50%{ transform:translateX(30%);}100%{ transform:translateX(100%);} }
+
+    .tagline{font-size:13px;color:var(--muted);margin-top:8px;}
+    .top-controls{position:relative;display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;}
+    .dark-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+
+    .fab { position:fixed; right:18px; width:52px; height:52px; border-radius:999px; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 14px 30px rgba(0,0,0,0.35); cursor:pointer; z-index:1200; border:0; }
+    #sigFab{ bottom:86px; background:linear-gradient(135deg,var(--info), #1e40af); }
+    #helpFab{ bottom:18px; background:linear-gradient(135deg,var(--accent-1),var(--accent-2)); }
+    .fab:active{transform:scale(.98);}
+
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--text);}
+    input[type="text"], input[type="email"], input[type="password"], textarea, input[type="file"]{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:var(--panel);font-size:14px;color:var(--text);box-sizing:border-box;}
+    textarea{min-height:80px;resize:vertical;font-family:inherit;}
+    .hint{font-size:12px;color:var(--muted);margin-top:6px;}
+
+    .section-title{font-size:14px;font-weight:900;margin-top:14px;margin-bottom:8px;color:var(--text);letter-spacing:0.01em;}
+    .inline-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;border:0;font-size:13.5px;position:relative;overflow:hidden}
+    .btn-primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;box-shadow:0 10px 26px rgba(0,0,0,0.18);}
+    .btn-secondary{background:transparent;border:1px solid rgba(15,23,42,0.06);color:var(--text);}
+
+    .summary-box{margin-top:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.02));border:1px dashed rgba(15,23,42,0.04);}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
+    .summary-item{padding:8px;border-radius:8px;background:var(--panel);border:1px solid rgba(15,23,42,0.03);text-align:center;}
+    .summary-label{color:var(--muted);font-weight:700;font-size:12px;} .summary-value{font-weight:800;margin-top:6px;}
+
+    .summary-status{margin-top:12px;padding:10px 12px;border-radius:10px;font-weight:800;display:inline-block;}
+    .summary-status.success{color:var(--success);background:linear-gradient(180deg, rgba(16,185,129,0.06), rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.09);}
+    .summary-status.error{color:var(--danger);background:linear-gradient(180deg, rgba(185,28,28,0.04), rgba(185,28,28,0.02));border:1px solid rgba(185,28,28,0.08);}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;border-radius:8px;overflow:hidden;}
+    th,td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(15,23,42,0.03);}
+    th{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.00));font-weight:800;color:var(--text);}
+    tbody tr:hover{background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.00));}
+
+    .status-sent{color:var(--success);font-weight:800;} .status-error{color:var(--danger);font-weight:800;}
+
+    #previewModal{display:none;position:fixed;inset:0;z-index:1100;align-items:center;justify-content:center;padding:18px;background:rgba(7,12,18,0.36);backdrop-filter:blur(4px)}
+    .modal-card{width:100%;max-width:760px;background:var(--panel);border-radius:12px;padding:14px;box-shadow:0 30px 60px rgba(2,6,23,0.45);}
+
+    #previewContent{margin-top:12px;max-height:62vh;overflow:auto;border-top:1px solid rgba(15,23,42,0.04);padding-top:12px;}
+    .preview-list{display:flex;flex-direction:column;gap:14px;}
+    .preview-card{background:transparent;border-radius:10px;padding:12px 6px;border:1px solid rgba(15,23,42,0.03);box-shadow:0 6px 16px rgba(2,6,23,0.03);}
+    .preview-row{display:grid;grid-template-columns:140px 1fr;gap:10px 18px;align-items:start;}
+    .preview-row + .preview-row{margin-top:10px;}
+    .field-label{font-weight:900;color:var(--text);font-size:13px;line-height:1.25;padding-top:2px;}
+    .field-value{font-size:14px;color:var(--muted);line-height:1.45;word-break:break-word;}
+    .signature{margin-top:10px;border-top:1px dashed rgba(15,23,42,0.04);padding-top:8px;}
+    .attachments-list{display:flex;flex-direction:column;gap:6px;}
+    .attachment-item{font-weight:700;font-size:13px;color:var(--text);}
+    .single-preview .preview-card{padding:18px;}
+
+    #spinnerOverlay{display:none;position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.42);align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+    .spinner-box{background:var(--panel);padding:18px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 18px 40px rgba(2,6,23,0.28)}
+    .spinner { width:56px;height:56px;border-radius:50%;border:6px solid rgba(0,0,0,0.06);border-top-color:var(--accent-2);animation:spin 0.9s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    #successOverlay{display:none;position:fixed;inset:0;z-index:1350;align-items:center;justify-content:center;background:rgba(255,255,255,0.85)}
+    body.dark #successOverlay{background:rgba(2,6,23,0.75)}
+    .tick-card{width:220px;height:220px;border-radius:20px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(2,6,23,0.18)}
+    .tick{ width:88px;height:88px;border-radius:999px;background: linear-gradient(180deg,var(--info), #1d4ed8);display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;color:#fff;font-size:44px;transform:scale(0);animation:tickPop 520ms cubic-bezier(.2,.9,.3,1) forwards;}
+    @keyframes tickPop { 0%{transform:scale(.06);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);} }
+    .checkmark{width:48px;height:30px;position:relative;display:block;box-sizing:border-box;}
+    .checkmark::after{ content:""; position:absolute; left:50%; top:50%; width:22px; height:44px; border-right:5px solid rgba(255,255,255,0.95); border-bottom:5px solid rgba(255,255,255,0.95); transform-origin:left top; transform:translate(-50%,-50%) rotate(40deg) scaleY(0); opacity:0; animation:draw 480ms ease forwards 160ms; }
+    @keyframes draw{ from{ transform:translate(-50%,-50%) rotate(40deg) scaleY(0); opacity:0; } to{ transform:translate(-50%,-50%) rotate(40deg) scaleY(1); opacity:1; } }
+
+    /* Signature modal */
+    #sigModal{display:none;position:fixed;inset:0;z-index:1225;align-items:center;justify-content:center;padding:18px;background:rgba(7,12,18,0.36);backdrop-filter:blur(4px)}
+    .sig-card{width:100%;max-width:760px;background:var(--panel);border-radius:12px;padding:14px;box-shadow:0 30px 60px rgba(2,6,23,0.45);}
+    .sig-textarea{width:100%;min-height:260px;padding:12px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);font-family:monospace;font-size:13px;white-space:pre-wrap;overflow:auto;background:var(--panel);color:var(--text);}
+    .sig-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+    .sig-preview{margin-top:12px;padding:12px;border-radius:8px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(0,0,0,0.01), rgba(0,0,0,0.00)); max-height:320px;overflow:auto;}
+
+    #helpModal{display:none;position:fixed;inset:0;z-index:1250;align-items:center;justify-content:center;padding:18px;background:rgba(7,12,18,0.36);backdrop-filter:blur(4px)}
+    .help-card{max-width:520px;background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 20px 60px rgba(2,6,23,0.2);}
+
+    @media (max-width:720px){
+      .card{max-width:96%;padding:14px;}
+      .summary-grid{grid-template-columns:repeat(2,1fr);}
+      .header-line{width:64%}
+      .preview-row{grid-template-columns:110px 1fr;}
+      #sigFab, #helpFab { right:12px; }
+    }
   </style>
 </head>
 <body>
   <div class="page-wrapper">
-    <div class="card">
-      <div class="card-header">
-        <h1>{{ APP_NAME }}</h1>
-        <div class="tagline">
-          Upload Excel/CSV, optionally attach PDFs, and send customised emails to multiple recipients in one go.
+    <div class="card" role="main" aria-labelledby="appTitle">
+      <div class="top-controls" style="margin-bottom:6px;">
+        <div class="dark-toggle" id="darkToggle" title="Toggle dark mode" aria-pressed="false">
+          <svg id="moonIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:middle"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"></path></svg>
+          <span style="font-size:13px;color:var(--muted);">Theme</span>
         </div>
+      </div>
 
-        <div class="badge-row">
-          <div class="badge">Designed for Lighthouse Communities Foundation</div>
-          <div class="badge badge-secondary">Developed by: Sampada Swami – HR Analytics Associate</div>
-        </div>
+      <div class="card-header">
+        <h1 id="appTitle">{{ APP_NAME }}</h1>
+        <div class="header-line" aria-hidden="true"></div>
+        <div class="tagline">Upload Excel/CSV, optionally attach PDFs, and send personalised emails in one go.</div>
       </div>
 
       <div class="messages" aria-live="polite">
         {% with msgs = get_flashed_messages(with_categories=true) %}
         {% if msgs %}
           {% for category, msg in msgs %}
-            <div class="alert {{ 'alert-success' if category=='success' else 'alert-error' }}">
-              {{ msg }}
-            </div>
+            <div class="alert {{ 'alert-success' if category=='success' else 'alert-error' }}">{{ msg }}</div>
           {% endfor %}
         {% endif %}
         {% endwith %}
       </div>
 
-      <!-- PRODUCTION NOTE: consider adding CSRF token here if you use Flask-WTF -->
-      <form method="post" action="{{ url_for('index') }}" enctype="multipart/form-data" id="mainForm" accept-charset="utf-8" novalidate>
+      <form method="post" enctype="multipart/form-data" id="mainForm" aria-describedby="hintForm">
         <div class="section-title">SMTP Email & App Password</div>
         <label for="smtp_email">SMTP Email</label>
-        <input type="email" id="smtp_email" name="smtp_email" autocomplete="email" aria-label="SMTP Email" placeholder="officialemail@example.com" required value="{{ request.form.get('smtp_email','') or request.args.get('smtp_email','') }}">
+        <input type="email" id="smtp_email" name="smtp_email" placeholder="officialemail@example.com" required value="{{ request.form.smtp_email or request.args.get('smtp_email','') }}">
 
         <label for="smtp_pass">Gmail App Password</label>
-        <!-- password is required only when SendGrid is not configured on the server -->
-        <input type="password" id="smtp_pass" name="smtp_pass" autocomplete="new-password" aria-label="Gmail App Password" placeholder="Enter 16-digit App Password" {% if not SENDGRID_API_KEY %}required{% endif %}>
-        <div class="hint">
-          Use your Gmail App Password (not your normal login password).
-          {% if SENDGRID_API_KEY %}
-            <br><strong>Note:</strong> SMTP password is optional because SendGrid is configured on the server (SENDGRID_API_KEY present). If you plan to use SMTP instead, provide your App Password.
-          {% endif %}
-        </div>
+        <input type="password" id="smtp_pass" name="smtp_pass" placeholder="Enter 16-digit App Password" required>
+        <div class="hint">Use your Gmail App Password (not your normal login password).</div>
 
         <label for="sender_name">Sender Name</label>
-        <input type="text" id="sender_name" name="sender_name" placeholder="Lighthouse Communities Foundation" value="{{ request.form.get('sender_name', 'Lighthouse Communities Foundation') }}">
-        <div class="hint">This name will appear in the "From" field of the email.</div>
+        <input type="text" id="sender_name" name="sender_name" placeholder="Lighthouse Communities Foundation" value="{{ request.form.sender_name or 'Lighthouse Communities Foundation' }}">
+        <div class="hint">This name will appear in the "From" field.</div>
 
         <div class="section-title">Step 1 — Upload Employees File</div>
         <label for="employees_file">Employees file (.xlsx or .csv)</label>
-        <input type="file" id="employees_file" name="employees_file" accept=".xlsx,.csv" required aria-label="Employees file">
-        <div class="hint">Excel/CSV must contain an <strong>email</strong> column. Optional: name/emp_name column for {name} placeholder and PDF matching.</div>
+        <input type="file" id="employees_file" name="employees_file" accept=".xlsx,.csv" required>
+        <div class="hint">Must contain an <strong>email</strong> column. Optional: name/emp_name for {name} placeholder and PDF matching.</div>
 
         <div class="section-title">Step 2 — Upload PDFs (optional)</div>
         <label for="pdf_files">PDF files (multiple allowed)</label>
-        <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple aria-label="PDF files">
-        <div class="hint">When PDFs are uploaded and matching is enabled, the app will attach a PDF whose filename matches the employee name.</div>
-
-        <div style="margin-top:6px;">
+        <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple>
+        <div style="margin-top:8px;">
           <label style="display:inline-flex;align-items:center;gap:8px;">
-            <input type="checkbox" name="skip_if_no_pdf" id="skip_if_no_pdf" {% if request.form.get('skip_if_no_pdf') == 'on' %}checked{% endif %}> 
-            <span class="small">Skip sending email if no matching PDF found (when using PDF uploads). If unchecked, email will be sent body-only.</span>
+            <input type="checkbox" name="skip_if_no_pdf" id="skip_if_no_pdf" {% if request.form.get('skip_if_no_pdf') == 'on' %}checked{% endif %}>
+            <span class="hint">Skip if no matching PDF found (otherwise send body-only).</span>
           </label>
         </div>
 
         <div class="section-title">Step 3 — Email Content</div>
         <label for="subject">Subject</label>
-        <input type="text" id="subject" name="subject" placeholder="Enter email subject" value="{{ request.form.get('subject','') }}">
+        <input type="text" id="subject" name="subject" placeholder="Enter email subject" value="{{ request.form.subject or '' }}">
 
         <label for="body">Email Body</label>
-        <textarea id="body" name="body" placeholder="Type your email body here. You can use {name} if your Excel has a name / emp_name column.">{{ request.form.get('body','') }}</textarea>
-        <div class="hint">You can use placeholders like <code>{name}</code> (first name) and <code>{full_name}</code> (entire name). Use <code>Ctrl/Cmd + B</code> to make selected text bold (inserts <code>**bold**</code> — rendered in HTML email).</div>
+        <textarea id="body" name="body" placeholder="Type your email body here. Use {name} for first name.">{{ request.form.body or '' }}</textarea>
+        <div class="hint">Placeholders: <code>{name}</code> (first name), <code>{full_name}</code> (full). Use Ctrl/Cmd+B to bold (inserts <code>**bold**</code>).</div>
 
         <label for="signature">Email Signature (optional)</label>
-        <textarea id="signature" name="signature" placeholder="Regards,&#10;Your HR Team">{% if request.form.get('signature') %}{{ request.form.get('signature') }}{% elif prefilled_signature %}{{ prefilled_signature }}{% elif saved_signature %}{{ saved_signature }}{% endif %}</textarea>
-        <div class="hint">If empty, default will be used: "Regards, [Sender Name]". Use <code>Ctrl/Cmd + B</code> here too for bold.</div>
+        <textarea id="signature" name="signature" placeholder="Paste HTML signature or plain text here (supports links, icons)">{% if request.form.signature %}{{ request.form.signature }}{% elif prefilled_signature %}{{ prefilled_signature }}{% elif saved_signature %}{{ saved_signature }}{% endif %}</textarea>
+        <div class="hint">You can paste HTML (scripts/on* attributes are stripped). If blank, default "Regards, [Sender]" is used.</div>
 
-        <div style="margin-top:6px;" class="inline-row">
+        <div style="margin-top:8px;" class="inline-row">
           <label style="display:inline-flex;align-items:center;gap:8px;">
-            <input type="checkbox" name="use_saved_signature" id="use_saved_signature" {% if request.form.get('use_saved_signature') == 'on' %}checked{% endif %}> 
-            <span class="small">Use saved default signature for this SMTP Email (if any).</span>
+            <input type="checkbox" name="use_saved_signature" id="use_saved_signature" {% if request.form.get('use_saved_signature') == 'on' %}checked{% endif %}>
+            <span class="hint">Use saved default signature for this SMTP Email.</span>
           </label>
 
           <label style="display:inline-flex;align-items:center;gap:8px;">
-            <input type="checkbox" name="save_default_signature" id="save_default_signature" {% if request.form.get('save_default_signature') == 'on' %}checked{% endif %}> 
-            <span class="small">Save this signature as default for this SMTP Email.</span>
+            <input type="checkbox" name="save_default_signature" id="save_default_signature" {% if request.form.get('save_default_signature') == 'on' %}checked{% endif %}>
+            <span class="hint">Save this signature as default for this SMTP Email.</span>
           </label>
 
           {% if saved_signature %}
-            <div class="small" style="margin-left:6px;">Saved signature found for this SMTP email.</div>
+            <div class="hint" style="margin-left:6px;">Saved signature found for this SMTP email.</div>
           {% endif %}
         </div>
 
         <div class="section-title">Step 4 — CC / BCC (optional)</div>
         <label for="cc">CC</label>
-        <input type="text" id="cc" name="cc" placeholder="cc1@example.com, cc2@example.com" value="{{ request.form.get('cc','') }}">
+        <input type="text" id="cc" name="cc" placeholder="cc1@example.com, cc2@example.com" value="{{ request.form.cc or '' }}">
 
         <label for="bcc">BCC</label>
-        <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com" value="{{ request.form.get('bcc','') }}">
+        <input type="text" id="bcc" name="bcc" placeholder="bcc@example.com" value="{{ request.form.bcc or '' }}">
 
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button type="button" id="previewBtn" class="btn-secondary">👁️ Preview</button>
-          <!-- IMPORTANT: sendEmailsBtn is a button (not submit) so we control when the form is submitted -->
-          <button type="button" id="sendEmailsBtn" class="btn-primary">Send Emails</button>
-          <div style="margin-left:12px;" class="small">Preview shows first <input type="number" id="preview_count" name="max_preview" min="1" max="10" value="3" style="width:56px; padding:4px 6px; border-radius:8px; border:1px solid #d1d5db; background:#fff;"> recipients.</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px;">
+          <button type="button" id="previewBtn" class="btn btn-secondary">👁️ Preview</button>
+          <button type="button" id="sendEmailsBtn" class="btn btn-primary">Send Emails</button>
+          <div style="margin-left:12px;" class="hint">Preview first <input type="number" id="preview_count" name="max_preview" min="1" max="10" value="3" style="width:64px;padding:6px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:var(--panel);"> recipients.</div>
         </div>
       </form>
 
+      <!-- Summary status line (shows green when no errors, red when errors>0) -->
       {% if summary %}
-        <div class="summary-box">
-          <div><strong>Summary</strong></div>
-          <div class="summary-grid">
-            <div class="summary-item">
-              <div class="summary-label">Total</div>
-              <div class="summary-value">{{ summary.total }}</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-label">Sent</div>
-              <div class="summary-value">{{ summary.sent }}</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-label">Errors</div>
-              <div class="summary-value">{{ summary.errors }}</div>
-            </div>
-            <div class="summary-item">
-              <div class="summary-label">Time</div>
-              <div class="summary-value">{{ summary.time_taken }}</div>
-            </div>
+        {% if summary.errors and summary.errors > 0 %}
+          <div class="summary-status error">Completed with some errors. Sent: {{ summary.sent }} / {{ summary.total }}, Errors: {{ summary.errors }}, Time: {{ summary.time_taken }}s</div>
+        {% else %}
+          <div class="summary-status success">Completed successfully. Sent: {{ summary.sent }} / {{ summary.total }}, Errors: {{ summary.errors }}, Time: {{ summary.time_taken }}s</div>
+        {% endif %}
+      {% endif %}
+
+      {% if summary %}
+        <div class="summary-box" role="region" aria-label="Summary" style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><strong>Summary</strong></div>
+            {% if report_id %}
+              <form action="{{ url_for('download_report', report_id=report_id) }}" method="get"><button type="submit" class="btn btn-secondary" style="padding:8px 12px;">⬇ Download</button></form>
+            {% endif %}
           </div>
-
-          <div class="hint" style="margin-top:8px;">{{ summary.sent }} of {{ summary.total }} emails sent successfully.</div>
-
-          {% if report_id %}
-            <form action="{{ url_for('download_report', report_id=report_id) }}" method="get" target="_blank" rel="noopener">
-              <button type="submit" class="btn-secondary">⬇ Download Report (Excel)</button>
-            </form>
-          {% endif %}
+          <div class="summary-grid">
+            <div class="summary-item"><div class="summary-label">Total</div><div class="summary-value">{{ summary.total }}</div></div>
+            <div class="summary-item"><div class="summary-label">Sent</div><div class="summary-value">{{ summary.sent }}</div></div>
+            <div class="summary-item"><div class="summary-label">Errors</div><div class="summary-value {% if summary.errors and summary.errors > 0 %}status-error{% endif %}">{{ summary.errors }}</div></div>
+            <div class="summary-item"><div class="summary-label">Time</div><div class="summary-value">{{ summary.time_taken }}</div></div>
+          </div>
         </div>
       {% endif %}
 
       {% if report_rows %}
-        <div class="table-title-row">
+        <div class="table-title-row" style="margin-top:14px;">
           <div class="table-title">Email Delivery Details</div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Employee / Name</th>
-              <th>Email</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+        <table role="table" aria-label="Email delivery details">
+          <thead><tr><th>#</th><th>Employee / Name</th><th>Email</th><th>Status</th><th>PDF Attached</th><th>Skipped Reason</th></tr></thead>
           <tbody>
             {% for r in report_rows %}
             <tr>
@@ -213,14 +242,12 @@
               <td>{{ r.emp_name }}</td>
               <td>{{ r.email }}</td>
               <td>
-                {% if r.status == 'Sent' %}
-                  <span class="status-sent">Sent</span>
-                {% elif r.status.startswith('Error') or r.status.startswith('Skipped') %}
-                  <span class="status-error">{{ r.status }}</span>
-                {% else %}
-                  {{ r.status }}
-                {% endif %}
+                {% if r.status == 'Sent' %}<span class="status-sent">Sent</span>
+                {% elif r.status.startswith('Failed') or r.status.startswith('Error') %}<span class="status-error">{{ r.status }}</span>
+                {% else %}{{ r.status }}{% endif %}
               </td>
+              <td>{{ 'Yes' if r.pdf_attached else 'No' }}</td>
+              <td>{{ r.skipped_reason or '-' }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -229,249 +256,345 @@
     </div>
   </div>
 
-  <!-- Preview Modal -->
-  <div id="previewModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-    <div style="max-width:900px; width:100%; background:#fff; border-radius:14px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0;">Email Preview — Sample #1</h3>
-        <button id="closePreview" class="btn-secondary" style="padding:6px 10px;">Close</button>
+  <!-- Signature FAB (above help) -->
+  <button id="sigFab" class="fab" aria-label="Show signature (copy)">S</button>
+
+  <!-- Help FAB -->
+  <button id="helpFab" class="fab" aria-label="Help (instructions)">?</button>
+
+  <!-- Signature Modal -->
+  <div id="sigModal" aria-hidden="true">
+    <div class="sig-card" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="sigTitle" style="margin:0;">Signature HTML (copy / insert / preview / download)</h3>
+        <div style="display:flex;gap:8px;">
+          <button id="closeSig" class="btn btn-secondary" style="padding:8px 12px;">Close</button>
+        </div>
       </div>
 
-      <div id="previewContent" style="margin-top:12px; max-height:60vh; overflow:auto; border-top:1px solid #eee; padding-top:12px;"></div>
+      <div style="margin-top:12px;">
+        <textarea id="sigTextarea" class="sig-textarea" aria-label="Signature HTML — copy the contents below"></textarea>
 
-      <div style="display:flex; gap:8px; margin-top:12px; justify-content:flex-end;">
-        <button id="sendAllBtn" class="btn-primary" style="display:none;">Send All</button>
-        <button id="sendSingleBtn" class="btn-secondary" style="display:none;">Send This Only</button>
+        <div class="sig-actions" role="toolbar" aria-label="Signature actions">
+          <button id="copySigBtn" class="btn btn-primary">Copy to clipboard</button>
+          <button id="insertSigBtn" class="btn btn-secondary">Insert into signature box</button>
+          <button id="downloadSigBtn" class="btn btn-secondary">Download .html</button>
+          <label style="display:inline-flex;align-items:center;gap:8px;margin-left:8px;">
+            <input type="checkbox" id="togglePreview"> <span style="font-size:13px;color:var(--muted)">Preview rendered</span>
+          </label>
+        </div>
+
+        <div id="sigPreview" class="sig-preview" style="display:none;" aria-hidden="true"></div>
       </div>
     </div>
   </div>
 
+  <!-- Help Modal -->
+  <div id="helpModal" aria-hidden="true">
+    <div class="help-card" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <h3 id="helpTitle">Quick Help</h3>
+      <p style="color:var(--muted)">Steps to use MailDesk:</p>
+      <ol>
+        <li>Upload a CSV/XLSX with a column named <strong>email</strong>. Optionally include <strong>name</strong> or <strong>emp_name</strong> for personalization.</li>
+        <li>Optionally attach PDFs — filenames are matched to employee names automatically.</li>
+        <li>Write subject & body. Use <code>{name}</code> or <code>{full_name}</code>. Use <kbd>Ctrl/Cmd+B</kbd> to bold (adds <code>**bold**</code>).</li>
+        <li>Preview first, then click <strong>Send Emails</strong> → in the preview modal click <strong>Send All</strong>.</li>
+      </ol>
+      <p style="color:var(--muted)"><strong>Tip:</strong> Paste an HTML signature into the signature box — scripts/on* attributes are removed for safety.</p>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+        <button id="closeHelp" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="previewModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="previewTitle" style="margin:0;">Email Preview — Sample #1</h3>
+        <div style="display:flex;gap:8px;">
+          <button id="closePreview" class="btn btn-secondary" style="padding:8px 12px;">Close</button>
+        </div>
+      </div>
+      <div id="previewContent" style="margin-top:12px;max-height:62vh;overflow:auto;border-top:1px solid rgba(15,23,42,0.04);padding-top:12px;"></div>
+      <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+        <button id="sendAllBtn" class="btn btn-primary" style="display:none;">Send All</button>
+        <button id="sendSingleBtn" class="btn btn-secondary" style="display:none;">Send This Only</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spinner Overlay -->
+  <div id="spinnerOverlay" aria-hidden="true">
+    <div class="spinner-box" role="status" aria-live="assertive" aria-label="Sending">
+      <div class="spinner" aria-hidden="true"></div>
+      <div style="font-weight:700;color:var(--text)">Sending emails… please wait</div>
+      <div style="font-size:12px;color:var(--muted)">Don't close this window until the process completes.</div>
+    </div>
+  </div>
+
+  <!-- Success Overlay -->
+  <div id="successOverlay" aria-hidden="true">
+    <div class="tick-card" role="status" aria-live="polite">
+      <div class="tick"><span class="checkmark"></span></div>
+      <div style="font-weight:800;color:var(--text)">{{ summary.sent if summary else 'Done' }}</div>
+      <div style="color:var(--muted);font-size:13px">Emails sent successfully</div>
+    </div>
+  </div>
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function(){
+  const form = document.getElementById("mainForm");
   const previewBtn = document.getElementById("previewBtn");
   const previewModal = document.getElementById("previewModal");
   const previewContent = document.getElementById("previewContent");
   const closePreview = document.getElementById("closePreview");
-  const form = document.getElementById("mainForm");
   const sendEmailsBtn = document.getElementById("sendEmailsBtn");
   const sendAllBtn = document.getElementById("sendAllBtn");
   const sendSingleBtn = document.getElementById("sendSingleBtn");
+  const spinner = document.getElementById("spinnerOverlay");
+  const success = document.getElementById("successOverlay");
 
-  function showModal() { previewModal.style.display = "flex"; }
-  function hideModal() { previewModal.style.display = "none"; }
+  // signature modal elements
+  const sigFab = document.getElementById("sigFab");
+  const sigModal = document.getElementById("sigModal");
+  const closeSig = document.getElementById("closeSig");
+  const sigTextarea = document.getElementById("sigTextarea");
+  const copySigBtn = document.getElementById("copySigBtn");
+  const insertSigBtn = document.getElementById("insertSigBtn");
+  const downloadSigBtn = document.getElementById("downloadSigBtn");
+  const togglePreview = document.getElementById("togglePreview");
+  const sigPreview = document.getElementById("sigPreview");
 
-  closePreview.addEventListener("click", hideModal);
-  previewModal.addEventListener("click", function(e) {
-    if (e.target === previewModal) hideModal();
+  // help modal
+  const helpFab = document.getElementById("helpFab");
+  const helpModal = document.getElementById("helpModal");
+  const closeHelp = document.getElementById("closeHelp");
+
+  const darkToggle = document.getElementById("darkToggle");
+
+  // dark mode restore
+  function applyTheme(theme){ if(theme === 'dark') document.body.classList.add('dark'); else document.body.classList.remove('dark'); darkToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false'); }
+  const stored = localStorage.getItem('maildesk_theme') || 'light';
+  applyTheme(stored);
+  darkToggle.addEventListener('click', function(){ const isDark = document.body.classList.toggle('dark'); localStorage.setItem('maildesk_theme', isDark ? 'dark' : 'light'); darkToggle.setAttribute('aria-pressed', isDark ? 'true' : 'false'); });
+
+  // signature HTML (exact text you provided)
+  const signatureHtml = `<!-- START: Signature -->
+<div style="font-family:Arial,Helvetica,sans-serif;color:#111827;font-size:14px;line-height:1.4;">
+
+  <div style="margin-bottom:6px;">Thanks & Regards,</div>
+
+  <div style="font-weight:700;font-size:15px;">Sampada Swami</div>
+  <div style="font-weight:600;">HR Analytics Associate – Human Resources</div>
+
+  <div style="margin-bottom:6px;">
+    <span style="font-weight:600;">Lighthouse Communities Foundation</span>
+    <span style="font-weight:400;"> (formerly known as Pune City Connect)</span>
+  </div>
+
+  <div style="color:#374151;font-size:13px;margin-bottom:10px;">
+    <strong>Office:</strong>
+    The Lighthouse Complex, Off Bremen Chowk, Spicer College Road, Aundh, Pune - 411007, Maharashtra, India
+  </div>
+
+  <!-- Logo -->
+  <div style="margin:10px 0;">
+    <img src="https://lh3.googleusercontent.com/d/159K9oDZEJEE3U3sBsxzvla5Fv1J2e9sP"
+         alt="Lighthouse Logo"
+         height="80"
+         style="display:block;border:0;">
+  </div>
+
+  <!-- States Row -->
+  <div style="margin-top:8px;font-size:13px;color:#000;">
+    <a href="https://maps.app.goo.gl/8Ae6K1AvDEynmeNYA?g_st=iw"
+       style="color:#2563eb;text-decoration:none;" target="_blank">
+       Maharashtra
+    </a>
+    | <span>Delhi</span>
+    | <span>Odisha</span>
+    | <span>Telangana</span>
+    | <span>Uttar Pradesh</span>
+  </div>
+
+  <!-- Social Icons -->
+  <div style="margin-top:10px;">
+    <a href="https://www.linkedin.com/company/lcf-in/" style="text-decoration:none;margin-right:6px;">
+      <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" width="28">
+    </a>
+    <a href="https://www.instagram.com/lcf.in/" style="text-decoration:none;margin-right:6px;">
+      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" width="28">
+    </a>
+    <a href="https://www.youtube.com/@lcf_in" style="text-decoration:none;">
+      <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" width="28">
+    </a>
+  </div>
+
+</div>
+<!-- END: Signature -->`;
+
+  // set the textarea value
+  if(sigTextarea) sigTextarea.value = signatureHtml;
+
+  // sig FAB -> open modal and select content
+  sigFab.addEventListener('click', function(){
+    sigModal.style.display = 'flex'; sigModal.setAttribute('aria-hidden','false');
+    if(sigTextarea) { sigTextarea.value = signatureHtml; sigTextarea.focus(); sigTextarea.select(); }
+    // reset preview
+    togglePreview.checked = false; sigPreview.style.display = 'none'; sigPreview.innerHTML = '';
   });
 
-  function escapeHtml(str) {
-    if (!str && str !== 0) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+  // close sig modal
+  closeSig.addEventListener('click', function(){ sigModal.style.display = 'none'; sigModal.setAttribute('aria-hidden','true'); });
+  sigModal.addEventListener('click', function(e){ if(e.target === sigModal){ sigModal.style.display='none'; sigModal.setAttribute('aria-hidden','true'); } });
 
-  // Build a structured preview card (To, Cc, Bcc, Subject, Body, Signature, Attachments)
-  function buildPreviewCard(p) {
-    const to = escapeHtml(p.to || p.email || "");
-    const cc = (p.cc && p.cc.length) ? escapeHtml(p.cc.join(", ")) : "";
-    const bcc = (p.bcc && p.bcc.length) ? escapeHtml(p.bcc.join(", ")) : "";
-    const subject = escapeHtml(p.subject || "");
-    const signature = escapeHtml(p.signature || "");
-    const attachments = p.attachments && p.attachments.length ? p.attachments.map(a => `<div class="field-value">${escapeHtml(a)}</div>`).join("") : "<div class='field-value small'>No attachments</div>";
-    // prefer p.html if available; otherwise use plain body
-    const body_html = p.html ? p.html : `<pre style="white-space:pre-wrap; font-family:monospace;">${escapeHtml(p.body || "")}</pre>`;
-
-    return `
-      <div class="preview-row">
-        <div class="field-label">To</div>
-        <div class="field-value">${to}</div>
-
-        <div class="field-label">Cc</div>
-        <div class="field-value">${cc || '<span class="small">None</span>'}</div>
-
-        <div class="field-label">Bcc</div>
-        <div class="field-value">${bcc || '<span class="small">None</span>'}</div>
-
-        <div class="field-label">Subject</div>
-        <div class="field-value">${subject}</div>
-
-        <div class="field-label">Mail Body</div>
-        <div class="field-value">${body_html}</div>
-
-        <div class="field-label">Signature</div>
-        <div class="field-value"><pre style="white-space:pre-wrap; font-family:monospace;">${signature}</pre></div>
-
-        <div class="field-label">Attached File</div>
-        <div class="field-value">${attachments}</div>
-      </div>
-    `;
-  }
-
-  // Existing preview button - shows first N previews (no send)
-  previewBtn.addEventListener("click", async function() {
-    previewContent.innerHTML = "<div class='small'>Generating preview…</div>";
-    showModal();
-
-    const fd = new FormData(form);
-    try {
-      const resp = await fetch("/preview", { method: "POST", body: fd });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.error || 'Server error'}</div>`;
-        return;
-      }
-      const data = await resp.json();
-      if (!data.ok) {
-        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${data.error || 'Unknown'}</div>`;
-        return;
-      }
-      if (!data.previews || data.previews.length === 0) {
-        previewContent.innerHTML = "<div class='small'>No preview rows found in file.</div>";
-        return;
-      }
-      // show multiple previews
-      let html = "";
-      data.previews.forEach(function(p, i) {
-        // reuse buildPreviewCard but p might have slightly different fields
-        // normalize
-        const normalized = {
-          to: p.to || p.email || "",
-          cc: p.cc || [],
-          bcc: p.bcc || [],
-          subject: p.subject || "",
-          body: p.body || "",
-          html: p.html || "",
-          signature: p.signature || "",
-          attachments: p.attachments || []
-        };
-        html += buildPreviewCard(normalized);
-      });
-      previewContent.innerHTML = html;
-      sendAllBtn.style.display = 'none';
-      sendSingleBtn.style.display = 'none';
-    } catch (err) {
-      previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.message}</div>`;
+  // copy to clipboard
+  copySigBtn.addEventListener('click', async function(){
+    try{
+      await navigator.clipboard.writeText(sigTextarea.value);
+      copySigBtn.textContent = "Copied!";
+      setTimeout(()=>{ copySigBtn.textContent = "Copy to clipboard"; }, 1400);
+    }catch(e){
+      sigTextarea.select();
+      try{ document.execCommand('copy'); copySigBtn.textContent = "Copied!"; setTimeout(()=>{ copySigBtn.textContent = "Copy to clipboard"; }, 1400); }catch(err){ alert("Copy failed — select and copy manually."); }
     }
   });
 
-  // Send Emails flow: show detailed preview for first recipient then allow Send All / Send This Only
-  sendEmailsBtn.addEventListener("click", async function() {
-    previewContent.innerHTML = "<div class='small'>Generating sample preview…</div>";
-    showModal();
-
-    const fd = new FormData(form);
-    fd.set('max_preview', '1');
-
-    try {
-      const resp = await fetch("/preview", { method: "POST", body: fd });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.error || 'Server error'}</div>`;
-        sendAllBtn.style.display = 'none';
-        sendSingleBtn.style.display = 'none';
-        return;
-      }
-      const data = await resp.json();
-      if (!data.ok) {
-        previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${data.error || 'Unknown'}</div>`;
-        sendAllBtn.style.display = 'none';
-        sendSingleBtn.style.display = 'none';
-        return;
-      }
-      if (!data.previews || data.previews.length === 0) {
-        previewContent.innerHTML = "<div class='small'>No preview rows found in file.</div>";
-        sendAllBtn.style.display = 'none';
-        sendSingleBtn.style.display = 'none';
-        return;
-      }
-
-      const p = data.previews[0];
-      const normalized = {
-        to: p.to || p.email || "",
-        cc: p.cc || [],
-        bcc: p.bcc || [],
-        subject: p.subject || "",
-        body: p.body || "",
-        html: p.html || "",
-        signature: p.signature || "",
-        attachments: p.attachments || []
-      };
-      previewContent.innerHTML = buildPreviewCard(normalized);
-
-      // show both buttons: Send All (existing) and Send This Only (new)
-      sendAllBtn.style.display = 'inline-flex';
-      sendSingleBtn.style.display = 'inline-flex';
-    } catch (err) {
-      previewContent.innerHTML = `<div class="alert alert-error">Preview failed: ${err.message}</div>`;
-      sendAllBtn.style.display = 'none';
-      sendSingleBtn.style.display = 'none';
-    }
-  });
-
-  // Send All -> add confirm_send=1 and submit
-  sendAllBtn.addEventListener('click', function() {
-    let inp = document.querySelector('input[name="confirm_send"]');
-    if (!inp) {
-      inp = document.createElement('input');
-      inp.type = 'hidden';
-      inp.name = 'confirm_send';
-      inp.value = '1';
-      form.appendChild(inp);
+  // insert into the main signature textarea (form)
+  insertSigBtn.addEventListener('click', function(){
+    const target = document.getElementById('signature');
+    if(target){
+      target.value = sigTextarea.value;
+      // visual hint: flash the field
+      target.style.transition = "box-shadow 220ms ease";
+      target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.12)";
+      setTimeout(()=>{ target.style.boxShadow = ""; }, 900);
+      // close modal for convenience (optional)
+      sigModal.style.display = 'none'; sigModal.setAttribute('aria-hidden','true');
     } else {
-      inp.value = '1';
+      alert("Signature field not found on the page.");
     }
-    hideModal();
-    form.submit();
   });
 
-  // Send This Only -> set form action to /send_single and submit
-  sendSingleBtn.addEventListener('click', function() {
-    // create a temporary override for action
-    const originalAction = form.action || "";
-    form.action = "/send_single";
-    hideModal();
-    form.submit();
-    // restore action after a short delay
-    setTimeout(function(){ form.action = originalAction; }, 1000);
+  // download signature as .html file
+  downloadSigBtn.addEventListener('click', function(){
+    const blob = new Blob([sigTextarea.value], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'signature.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   });
 
-  // Ctrl/Cmd+B handler for bold
-  function enableCtrlBForTextarea(textarea) {
-    textarea.addEventListener("keydown", function(e) {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
-      if (ctrlKey && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const val = textarea.value;
-        if (start !== null && end !== null) {
-          const selected = val.slice(start, end);
-          const before = val.slice(Math.max(0, start - 2), start);
-          const after = val.slice(end, Math.min(val.length, end + 2));
-          if (before === "**" && after === "**") {
-            textarea.value = val.slice(0, start - 2) + selected + val.slice(end + 2);
-            textarea.selectionStart = start - 2;
-            textarea.selectionEnd = end - 2;
-          } else {
-            textarea.value = val.slice(0, start) + "**" + selected + "**" + val.slice(end);
-            textarea.selectionStart = start + 2;
-            textarea.selectionEnd = end + 2;
-          }
-        }
-      }
-    });
+  // toggle preview rendered signature
+  togglePreview.addEventListener('change', function(){
+    if(togglePreview.checked){
+      // render HTML safely by setting innerHTML inside a simple container
+      sigPreview.style.display = 'block';
+      sigPreview.setAttribute('aria-hidden','false');
+      // Use the raw HTML content; this is intended for preview only.
+      sigPreview.innerHTML = sigTextarea.value;
+      // scroll into view
+      setTimeout(()=> sigPreview.scrollIntoView({behavior:'smooth', block:'nearest'}), 80);
+    } else {
+      sigPreview.style.display = 'none';
+      sigPreview.setAttribute('aria-hidden','true');
+      sigPreview.innerHTML = '';
+    }
+  });
+
+  // Help FAB
+  helpFab.addEventListener('click', function(){ helpModal.style.display = 'flex'; helpModal.setAttribute('aria-hidden', 'false'); });
+  closeHelp.addEventListener('click', function(){ helpModal.style.display = 'none'; helpModal.setAttribute('aria-hidden', 'true'); });
+  helpModal.addEventListener('click', function(e){ if(e.target === helpModal){ helpModal.style.display='none'; helpModal.setAttribute('aria-hidden','true'); } });
+
+  // Preview modal & buildPreviewCard unchanged from before
+  function escapeHtml(str){ if(!str && str!==0) return ""; return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+  function buildPreviewCard(p){
+    const to = escapeHtml(p.to||p.email||""),
+          cc = (p.cc && p.cc.length)?escapeHtml(p.cc.join(", ")):"",
+          bcc = (p.bcc && p.bcc.length)?escapeHtml(p.bcc.join(", ")):"",
+          subject = escapeHtml(p.subject||""),
+          attachments = p.attachments && p.attachments.length ? p.attachments.map(a => `<div class="attachment-item">${escapeHtml(a)}</div>`).join("") : "<div class='small'>No attachments</div>",
+          body_html = p.html ? p.html : `<pre style="white-space:pre-wrap;font-family:inherit;">${escapeHtml(p.body||"")}</pre>`,
+          signature_html = p.signature_html ? p.signature_html : `<pre style="white-space:pre-wrap;font-family:inherit;">${escapeHtml(p.signature||"")}</pre>`;
+
+    let sigToShow = signature_html;
+    try{ if(p.html && p.signature_html && String(body_html).indexOf(String(p.signature_html)) !== -1) sigToShow = ""; }catch(e){}
+
+    return `<div class="preview-card" role="article" aria-label="Email preview">
+      <div class="preview-list">
+        <div class="preview-row"><div class="field-label">To</div><div class="field-value">${to}</div></div>
+        <div class="preview-row"><div class="field-label">Cc</div><div class="field-value">${cc||'<span class="small">None</span>'}</div></div>
+        <div class="preview-row"><div class="field-label">Bcc</div><div class="field-value">${bcc||'<span class="small">None</span>'}</div></div>
+        <div class="preview-row"><div class="field-label">Subject</div><div class="field-value">${subject}</div></div>
+        <div class="preview-row"><div class="field-label">Mail Body</div><div class="field-value">${body_html}${sigToShow?'<div class="signature">'+sigToShow+'</div>':''}</div></div>
+        <div class="preview-row"><div class="field-label">Attached File</div><div class="field-value"><div class="attachments-list">${attachments}</div></div></div>
+      </div>
+    </div>`;
   }
 
-  const bodyTA = document.getElementById("body");
-  const sigTA = document.getElementById("signature");
-  if (bodyTA) enableCtrlBForTextarea(bodyTA);
-  if (sigTA) enableCtrlBForTextarea(sigTA);
+  previewBtn.addEventListener('click', async function(){
+    previewContent.innerHTML = "<div class='hint'>Generating preview…</div>";
+    previewModal.style.display = 'flex'; previewModal.setAttribute('aria-hidden','false');
+    const fd = new FormData(form);
+    try{
+      const resp = await fetch('/preview', { method:'POST', body: fd });
+      if(!resp.ok){ const err = await resp.json().catch(()=>({error:'Server error'})); previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${err.error||'Server error'}</div>`; return; }
+      const data = await resp.json();
+      if(!data.ok){ previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${data.error||'Unknown'}</div>`; return; }
+      if(!data.previews || data.previews.length === 0){ previewContent.innerHTML = "<div class='hint'>No preview rows found.</div>"; return; }
+      let html=''; data.previews.forEach(p=>{ html += buildPreviewCard({ to:p.to||p.email, cc:p.cc, bcc:p.bcc, subject:p.subject, body:p.body, html:p.html, signature:p.signature, signature_html:p.signature_html, attachments:p.attachments||[] }); });
+      previewContent.innerHTML = html; previewContent.classList.remove('single-preview'); sendAllBtn.style.display = 'none'; sendSingleBtn.style.display = 'none';
+    }catch(err){ previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${err.message}</div>`; }
+  });
+
+  sendEmailsBtn.addEventListener('click', async function(){
+    previewContent.innerHTML = "<div class='hint'>Generating sample preview…</div>";
+    previewModal.style.display = 'flex'; previewModal.setAttribute('aria-hidden','false');
+    const fd = new FormData(form); fd.set('max_preview','1');
+    try{
+      const resp = await fetch('/preview', { method:'POST', body: fd });
+      if(!resp.ok){ const err = await resp.json().catch(()=>({error:'Server error'})); previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${err.error||'Server error'}</div>`; sendAllBtn.style.display='none'; sendSingleBtn.style.display='none'; return; }
+      const data = await resp.json();
+      if(!data.ok){ previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${data.error||'Unknown'}</div>`; sendAllBtn.style.display='none'; sendSingleBtn.style.display='none'; return; }
+      if(!data.previews || data.previews.length === 0){ previewContent.innerHTML = "<div class='hint'>No preview rows found.</div>"; sendAllBtn.style.display='none'; sendSingleBtn.style.display='none'; return; }
+      const p = data.previews[0];
+      previewContent.innerHTML = buildPreviewCard({ to:p.to||p.email, cc:p.cc, bcc:p.bcc, subject:p.subject, body:p.body, html:p.html, signature:p.signature, signature_html:p.signature_html, attachments:p.attachments||[] });
+      previewContent.classList.add('single-preview'); sendAllBtn.style.display = 'inline-flex'; sendSingleBtn.style.display = 'inline-flex';
+    }catch(err){ previewContent.innerHTML = `<div class="hint" style="color:var(--danger)">Preview failed: ${err.message}</div>`; sendAllBtn.style.display='none'; sendSingleBtn.style.display='none'; }
+  });
+
+  // send all
+  sendAllBtn.addEventListener('click', function(){ let inp = document.querySelector('input[name="confirm_send"]'); if(!inp){ inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'confirm_send'; inp.value = '1'; form.appendChild(inp); } else { inp.value = '1'; } spinner.style.display = 'flex'; spinner.setAttribute('aria-hidden','false'); form.submit(); });
+
+  // send single
+  sendSingleBtn.addEventListener('click', function(){ const orig = form.action || ''; form.action = '/send_single'; spinner.style.display = 'flex'; spinner.setAttribute('aria-hidden','false'); form.submit(); setTimeout(()=>{ form.action = orig; }, 1200); });
+
+  form.addEventListener('submit', function(){ spinner.style.display = 'flex'; spinner.setAttribute('aria-hidden','false'); });
+  spinner.style.display = 'none';
+
+  // close preview when clicking outside
+  previewModal.addEventListener('click', function(e){ if(e.target === previewModal){ previewModal.style.display='none'; previewModal.setAttribute('aria-hidden','true'); previewContent.innerHTML=''; previewContent.classList.remove('single-preview'); }});
+  closePreview.addEventListener('click', function(){ previewModal.style.display='none'; previewModal.setAttribute('aria-hidden','true'); previewContent.innerHTML=''; previewContent.classList.remove('single-preview'); });
+
+  // help modal outside click
+  helpModal.addEventListener('click', function(e){ if(e.target === helpModal){ helpModal.style.display='none'; helpModal.setAttribute('aria-hidden','true'); } });
+
+  // show success overlay briefly
+  {% if summary and summary.sent and summary.sent > 0 %}
+    (function(){ success.style.display = 'flex'; success.setAttribute('aria-hidden','false'); setTimeout(function(){ success.style.display = 'none'; success.setAttribute('aria-hidden','true'); }, 1600); })();
+  {% endif %}
+
+  // Ctrl/Cmd+B handler for bold (body & signature)
+  function enableCtrlB(textarea){ textarea.addEventListener('keydown', function(e){ const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0; const ctrlKey = isMac ? e.metaKey : e.ctrlKey; if(ctrlKey && e.key.toLowerCase() === 'b'){ e.preventDefault(); const start = textarea.selectionStart, end = textarea.selectionEnd, val = textarea.value; if(start != null && end != null){ const selected = val.slice(start, end); const before = val.slice(Math.max(0, start-2), start); const after = val.slice(end, Math.min(val.length, end+2)); if(before === "**" && after === "**"){ textarea.value = val.slice(0, start-2) + selected + val.slice(end+2); textarea.selectionStart = start-2; textarea.selectionEnd = end-2; } else { textarea.value = val.slice(0, start) + "**" + selected + "**" + val.slice(end); textarea.selectionStart = start+2; textarea.selectionEnd = end+2; } } } }); }
+  const bodyTA = document.getElementById('body'), sigTA = document.getElementById('signature');
+  if(bodyTA) enableCtrlB(bodyTA); if(sigTA) enableCtrlB(sigTA);
 });
 </script>
 </body>
