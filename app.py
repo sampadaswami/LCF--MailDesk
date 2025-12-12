@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# app.py
 import os
 import time
 import uuid
@@ -8,12 +8,10 @@ import mimetypes
 import difflib
 import logging
 import json
-import base64
 from typing import List, Tuple, Optional
 import html as html_escape
 
 import pandas as pd
-import requests
 from flask import (
     Flask,
     render_template,
@@ -34,39 +32,24 @@ import smtplib
 # -----------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# Data directory: configurable and writable. Do NOT use app package dir for persistent mutable data on many hosting platforms.
-DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, "data"))
-os.makedirs(DATA_DIR, exist_ok=True)
-
-app = Flask(__name__, template_folder=TEMPLATES_DIR)
-
-# SECURITY: Must set FLASK_SECRET in production environment. Never commit secrets to repository.
+app = Flask(__name__, template_folder=TEMPLATES_DIR, static_folder=STATIC_DIR)
 app.secret_key = os.environ.get("FLASK_SECRET", "replace-me-in-dev")
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32 MB max upload (total request limit)
+app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32 MB max upload
 
-APP_NAME = "LCF - MailDesk"
+APP_NAME = "MailDesk"
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
 
-# SendGrid (fallback) config
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "").strip()
-# Default from if using SendGrid and not providing `smtp_email` at runtime
-SENDGRID_DEFAULT_FROM = os.environ.get("SENDGRID_FROM", "")
-SENDGRID_DEFAULT_FROM_NAME = os.environ.get("SENDGRID_FROM_NAME", "LCF MailDesk")
+SIGNATURE_STORE_FILENAME = os.path.join(app.root_path, "signature_store.json")
 
-SIGNATURE_STORE_FILENAME = os.path.join(DATA_DIR, "signature_store.json")
-
-# Upload limits (tunable)
-MAX_PDF_FILES = int(os.environ.get("MAX_PDF_FILES", 20))
-MAX_PDF_SIZE = int(os.environ.get("MAX_PDF_SIZE", 5 * 1024 * 1024))  # 5 MB each
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
-GENERATED_REPORTS: dict = {}
+GENERATED_REPORTS = {}
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -78,9 +61,9 @@ def render_template_safe(template_name: str, **context):
     try:
         context.setdefault("APP_NAME", APP_NAME)
         return render_template(template_name, **context)
-    except TemplateNotFound:
+    except TemplateNotFound as e:
         expected_path = os.path.join(app.template_folder or "templates", template_name)
-        logger.exception("Template not found: %s", template_name)
+        logger.exception("TemplateNotFound: %s (expected at %s)", template_name, expected_path)
         msg = f"""
         <h2>Template not found: {template_name}</h2>
         <p>Expected path: <code>{expected_path}</code></p>
@@ -99,7 +82,7 @@ def _ensure_signature_store_exists():
         try:
             with open(SIGNATURE_STORE_FILENAME, "w", encoding="utf-8") as fh:
                 json.dump({}, fh)
-            logger.info("Created signature store at %s", SIGNATURE_STORE_FILENAME)
+            logger.debug("Created signature store at %s", SIGNATURE_STORE_FILENAME)
         except Exception as e:
             logger.exception("Could not create signature store file: %s", e)
 
@@ -123,7 +106,7 @@ def save_signature_for_email(smtp_email: str, signature: str):
     try:
         with open(SIGNATURE_STORE_FILENAME, "w", encoding="utf-8") as fh:
             json.dump(store, fh, ensure_ascii=False, indent=2)
-        logger.info("Saved signature for %s", smtp_email)
+        logger.debug("Saved signature for %s", smtp_email)
     except Exception as e:
         logger.exception("Failed to save signature: %s", e)
         raise
@@ -162,31 +145,22 @@ def guess_mime_type(fname: str) -> Tuple[str, str]:
 
 
 def find_matching_pdf(emp_name: str, pdf_store: List[Tuple[str, bytes]]):
-    """
-    Tries exact substring match (normalized), then fuzzy match on normalized names.
-    Normalization = lowercase + remove whitespace.
-    """
     if not emp_name:
         return None
     key = "".join(str(emp_name).lower().split())
-    if not key:
-        return None
-
-    # substring / exact normalized match
+    # substring match
     for fname, fdata in pdf_store:
         base = os.path.splitext(fname)[0]
         base_norm = "".join(base.lower().split())
         if key in base_norm:
             return fname, fdata
-
-    # fuzzy match using normalized names
+    # fuzzy match
     base_names = [os.path.splitext(fname)[0] for fname, _ in pdf_store]
-    base_names_norm = ["".join(b.lower().split()) for b in base_names]
-    matches = difflib.get_close_matches(key, base_names_norm, n=1, cutoff=0.7)
+    matches = difflib.get_close_matches(str(emp_name), base_names, n=1, cutoff=0.7)
     if matches:
-        match_norm = matches[0]
+        match_base = matches[0]
         for fname, fdata in pdf_store:
-            if "".join(os.path.splitext(fname)[0].lower().split()) == match_norm:
+            if os.path.splitext(fname)[0] == match_base:
                 return fname, fdata
     return None
 
@@ -257,6 +231,29 @@ def _simple_markdown_to_html(plain_text: str) -> str:
     return "\n".join(html_parts)
 
 
+def _sanitize_signature_html(raw_html: str) -> str:
+    if not raw_html:
+        return ""
+    # remove script tags
+    cleaned = re.sub(r'(?is)<script.*?>.*?</script>', '', raw_html)
+    # remove on* event attributes like onclick="..."
+    cleaned = re.sub(r'(?i)\s+on\w+\s*=\s*"(?:[^"]*)"', '', cleaned)
+    cleaned = re.sub(r"(?i)\s+on\w+\s*=\s*'(?:[^']*)'", '', cleaned)
+    # remove javascript: URIs
+    cleaned = re.sub(r'(?i)javascript:', '', cleaned)
+    return cleaned
+
+
+def _render_signature_to_html(signature: str) -> str:
+    signature = signature or ""
+    # if it looks like HTML, sanitize and return; otherwise translate simple markdown/plain to HTML
+    if "<" in signature and ">" in signature:
+        sig_html = _sanitize_signature_html(signature)
+        return sig_html
+    else:
+        return _simple_markdown_to_html(signature)
+
+
 def build_personal_html(
     body_template: str,
     signature: str,
@@ -266,7 +263,8 @@ def build_personal_html(
 ):
     """
     Build the HTML alternative by converting the personalized plain body to a simple HTML.
-    Uses build_personal_body so replacements are identical for plain and HTML versions.
+    This returns the full HTML (body + signature). For preview we prefer using helper
+    _prepare_preview_body_and_signature to keep body and signature separate.
     """
     plain = build_personal_body(
         body_template=body_template,
@@ -279,79 +277,30 @@ def build_personal_html(
     return html
 
 
-def smtp_reachable(host: str = SMTP_HOST, port: int = SMTP_PORT, timeout: int = 5) -> bool:
+def _prepare_preview_body_and_signature(body_template, signature, smtp_email, sender_name, emp_name):
     """
-    Quick TCP connect test to see whether SMTP host:port is reachable from this host.
+    Return (plain_body, body_html_only, signature_html)
+    body_html_only does NOT include signature_html.
     """
-    import socket
+    body_template = (body_template or "").strip()
+    if not body_template:
+        body_template = "Hi {name},\n\nPlease see the details below."
+
+    full_name = str(emp_name or "").strip()
+    first_name = full_name.split()[0] if full_name else ""
     try:
-        s = socket.create_connection((host, port), timeout=timeout)
-        s.close()
-        return True
-    except Exception as e:
-        logger.info("SMTP not reachable (%s:%s): %s", host, port, e)
-        return False
+        body = body_template.format(name=first_name, full_name=full_name)
+    except Exception:
+        try:
+            body = body_template.replace("{name}", first_name).replace("{full_name}", full_name)
+        except Exception:
+            body = body_template
 
-
-def send_via_sendgrid(
-    to_email: str,
-    subject: str,
-    plain_text: str,
-    html_text: str,
-    from_email: str,
-    from_name: str,
-    attachments: List[Tuple[str, bytes]],
-) -> str:
-    """
-    Send a single email via SendGrid HTTP API.
-    Returns "OK" or error string.
-    """
-    if not SENDGRID_API_KEY:
-        return "Error: No SendGrid API key configured"
-
-    url = "https://api.sendgrid.com/v3/mail/send"
-    headers = {
-        "Authorization": f"Bearer {SENDGRID_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "personalizations": [
-            {"to": [{"email": to_email}], "subject": subject}
-        ],
-        "from": {"email": from_email, "name": from_name},
-        "content": [
-            {"type": "text/plain", "value": plain_text},
-            {"type": "text/html", "value": html_text},
-        ],
-    }
-
-    if attachments:
-        sg_attachments = []
-        for fname, fdata in attachments:
-            try:
-                b64 = base64.b64encode(fdata).decode("ascii")
-                maintype, subtype = guess_mime_type(fname)
-                sg_attachments.append({
-                    "content": b64,
-                    "type": f"{maintype}/{subtype}",
-                    "filename": fname,
-                })
-            except Exception as e:
-                logger.warning("SendGrid: failed encoding attachment %s: %s", fname, e)
-        if sg_attachments:
-            payload["attachments"] = sg_attachments
-
-    try:
-        r = requests.post(url, headers=headers, json=payload, timeout=30)
-        if 200 <= r.status_code < 300:
-            return "OK"
-        else:
-            logger.exception("SendGrid API error: %s %s", r.status_code, r.text)
-            return f"Error: SendGrid {r.status_code} {r.text}"
-    except Exception as e:
-        logger.exception("SendGrid request failed: %s", e)
-        return f"Error: SendGrid request failed: {e}"
+    plain_body = body
+    # Convert body to HTML (body only)
+    html_body_only = _simple_markdown_to_html(body)
+    signature_html = _render_signature_to_html(signature)
+    return plain_body, html_body_only, signature_html
 
 
 def send_email_to_employee(
@@ -366,53 +315,12 @@ def send_email_to_employee(
     attachments: List[Tuple[str, bytes]],
     cc_list: List[str],
     bcc_list: List[str],
-    use_sendgrid=False,
 ) -> str:
-    """
-    Sends a single email either via provided SMTP server OR via SendGrid (if use_sendgrid True).
-    Returns "OK" on success or "Error: <desc>" on failure.
-    """
     if not to_email or str(to_email).strip() == "":
         return "Error: No email address"
     to_email = str(to_email).strip()
     if not is_valid_email(to_email):
         return "Error: Invalid email"
-
-    full_body = build_personal_body(
-        body_template=body_template,
-        signature=signature,
-        smtp_email=smtp_email,
-        sender_name=sender_name,
-        emp_name=str(emp_name or ""),
-    )
-
-    try:
-        html_body = build_personal_html(
-            body_template=body_template,
-            signature=signature,
-            smtp_email=smtp_email,
-            sender_name=sender_name,
-            emp_name=str(emp_name or ""),
-        )
-    except Exception as e:
-        logger.warning("Failed to build HTML body: %s", e)
-        html_body = None
-
-    if use_sendgrid:
-        # Determine sender email/name for SendGrid
-        from_email = SENDGRID_DEFAULT_FROM if SENDGRID_DEFAULT_FROM else smtp_email
-        from_name = SENDGRID_DEFAULT_FROM_NAME if SENDGRID_DEFAULT_FROM_NAME else sender_name or APP_NAME
-        return send_via_sendgrid(
-            to_email=to_email,
-            subject=subject,
-            plain_text=full_body,
-            html_text=html_body or full_body,
-            from_email=from_email,
-            from_name=from_name,
-            attachments=attachments,
-        )
-
-    # Else use SMTP server object provided
     msg = EmailMessage()
     msg["Subject"] = sanitize_header_value(subject or "Notification")
     from_name_clean = sanitize_header_value(sender_name)
@@ -421,12 +329,29 @@ def send_email_to_employee(
     if cc_list:
         msg["Cc"] = ", ".join([sanitize_header_value(c) for c in cc_list if c])
 
+    # plain text content contains signature appended (so plain fallback works)
+    full_body = build_personal_body(
+        body_template=body_template,
+        signature=signature,
+        smtp_email=smtp_email,
+        sender_name=sender_name,
+        emp_name=str(emp_name or ""),
+    )
     msg.set_content(full_body)
-    if html_body:
-        try:
-            msg.add_alternative(html_body, subtype="html")
-        except Exception as e:
-            logger.warning("Failed to add HTML alternative for %s: %s", to_email, e)
+
+    # HTML alternative: build body-only html + signature html and combine (ensures single signature)
+    try:
+        plain_body, html_body_only, signature_html = _prepare_preview_body_and_signature(
+            body_template=body_template,
+            signature=signature,
+            smtp_email=smtp_email,
+            sender_name=sender_name,
+            emp_name=str(emp_name or ""),
+        )
+        full_html = html_body_only + "\n<div class=\"signature\">\n" + signature_html + "\n</div>"
+        msg.add_alternative(full_html, subtype="html")
+    except Exception as e:
+        logger.warning("Failed to add HTML alternative: %s", e)
 
     for fname, fdata in attachments:
         try:
@@ -434,10 +359,7 @@ def send_email_to_employee(
             msg.add_attachment(fdata, maintype=maintype, subtype=subtype, filename=fname)
         except Exception as e:
             logger.warning("Attachment add failed for %s: %s", fname, e)
-            try:
-                msg.add_attachment(fdata, maintype="application", subtype="octet-stream", filename=fname)
-            except Exception as e2:
-                logger.exception("Final fallback failed for attachment %s: %s", fname, e2)
+            msg.add_attachment(fdata, maintype="application", subtype="octet-stream", filename=fname)
 
     all_recipients = [to_email] + [c for c in cc_list if c] + [b for b in bcc_list if b]
     try:
@@ -458,7 +380,7 @@ def send_email_to_employee(
 
 
 # -----------------------
-# Routes (unchanged behaviour + fallback)
+# Routes
 # -----------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -515,18 +437,10 @@ def index():
 
         pdf_files = request.files.getlist("pdf_files")
         pdf_store = []
-        if pdf_files and len(pdf_files) > MAX_PDF_FILES:
-            flash(f"Too many PDF files uploaded (max {MAX_PDF_FILES}).", "error")
-            return redirect(url_for("index"))
-
         for f in pdf_files:
             if f and f.filename:
                 try:
-                    data = f.read()
-                    if len(data) > MAX_PDF_SIZE:
-                        flash(f"File {f.filename} is too large (> {MAX_PDF_SIZE} bytes).", "error")
-                        continue
-                    pdf_store.append((f.filename, data))
+                    pdf_store.append((f.filename, f.read()))
                 except Exception as e:
                     logger.warning("Could not read uploaded file %s: %s", f.filename, e)
 
@@ -571,21 +485,11 @@ def index():
         report_rows = []
         use_pdf_matching = bool(pdf_store) and (name_col is not None)
 
-        # Decide sending method: prefer SMTP if reachable, otherwise fallback to SendGrid if configured
-        smtp_ok = smtp_reachable(SMTP_HOST, SMTP_PORT)
-        using_sendgrid = False
-        if not smtp_ok:
-            if SENDGRID_API_KEY:
-                logger.info("SMTP not reachable; falling back to SendGrid API.")
-                using_sendgrid = True
-            else:
-                logger.error("SMTP not reachable and no SendGrid API key configured.")
-                flash("Cannot reach SMTP server from this host. Configure SENDGRID_API_KEY in environment to use SendGrid as fallback, or deploy where SMTP egress is allowed.", "error")
-                return redirect(url_for("index"))
-
         try:
-            if using_sendgrid:
-                # No smtp server object; we call send_via_sendgrid per recipient
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
+                server.starttls()
+                server.login(smtp_email, smtp_pass)
+
                 for idx, row in df.iterrows():
                     to_email = row.get(email_col, "")
                     emp_name = row.get(name_col, "") if name_col else ""
@@ -593,106 +497,52 @@ def index():
                     if not is_valid_email(to_email):
                         errors += 1
                         status_str = "Error: Invalid email"
-                        report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                        report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str, "pdf_attached": False, "skipped_reason": "invalid_email"})
                         continue
 
                     attachments_for_emp = []
+                    pdf_attached_flag = False
                     if use_pdf_matching:
                         matched = find_matching_pdf(emp_name, pdf_store)
                         if matched:
                             attachments_for_emp = [matched]
+                            pdf_attached_flag = True
                         else:
                             if skip_if_no_pdf:
                                 errors += 1
                                 status_str = "Skipped: No matching PDF for employee"
-                                report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                                report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str, "pdf_attached": False, "skipped_reason": "pdf_missing"})
                                 continue
                             else:
                                 attachments_for_emp = []
-                    else:
-                        attachments_for_emp = []
+                                pdf_attached_flag = False
 
-                    status = send_email_to_employee(
-                        server=None,
-                        to_email=to_email,
-                        emp_name=emp_name,
-                        subject=subject,
-                        body_template=body_template,
-                        signature=signature_to_use,
-                        smtp_email=smtp_email,
-                        sender_name=sender_name,
-                        attachments=attachments_for_emp,
-                        cc_list=cc_list,
-                        bcc_list=bcc_list,
-                        use_sendgrid=True,
-                    )
-                    if status == "OK":
-                        sent += 1
-                        status_str = "Sent"
-                    else:
-                        errors += 1
-                        status_str = status
-
-                    report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
-            else:
-                # Use SMTP server connection (existing behaviour)
-                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-                    server.starttls()
-                    server.login(smtp_email, smtp_pass)
-
-                    for idx, row in df.iterrows():
-                        to_email = row.get(email_col, "")
-                        emp_name = row.get(name_col, "") if name_col else ""
-
-                        if not is_valid_email(to_email):
-                            errors += 1
-                            status_str = "Error: Invalid email"
-                            report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
-                            continue
-
-                        attachments_for_emp = []
-                        if use_pdf_matching:
-                            matched = find_matching_pdf(emp_name, pdf_store)
-                            if matched:
-                                attachments_for_emp = [matched]
-                            else:
-                                if skip_if_no_pdf:
-                                    errors += 1
-                                    status_str = "Skipped: No matching PDF for employee"
-                                    report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
-                                    continue
-                                else:
-                                    attachments_for_emp = []
+                    try:
+                        status = send_email_to_employee(
+                            server=server,
+                            to_email=to_email,
+                            emp_name=emp_name,
+                            subject=subject,
+                            body_template=body_template,
+                            signature=signature_to_use,
+                            smtp_email=smtp_email,
+                            sender_name=sender_name,
+                            attachments=attachments_for_emp,
+                            cc_list=cc_list,
+                            bcc_list=bcc_list,
+                        )
+                        if status == "OK":
+                            sent += 1
+                            status_str = "Sent"
                         else:
-                            attachments_for_emp = []
-
-                        try:
-                            status = send_email_to_employee(
-                                server=server,
-                                to_email=to_email,
-                                emp_name=emp_name,
-                                subject=subject,
-                                body_template=body_template,
-                                signature=signature_to_use,
-                                smtp_email=smtp_email,
-                                sender_name=sender_name,
-                                attachments=attachments_for_emp,
-                                cc_list=cc_list,
-                                bcc_list=bcc_list,
-                                use_sendgrid=False,
-                            )
-                            if status == "OK":
-                                sent += 1
-                                status_str = "Sent"
-                            else:
-                                errors += 1
-                                status_str = status
-                        except Exception as inner_e:
-                            logger.exception("Error sending to %s: %s", to_email, inner_e)
                             errors += 1
-                            status_str = f"Error: {inner_e}"
+                            status_str = status
+                    except Exception as inner_e:
+                        logger.exception("Error sending to %s: %s", to_email, inner_e)
+                        errors += 1
+                        status_str = f"Error: {inner_e}"
 
-                        report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                    report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str, "pdf_attached": pdf_attached_flag, "skipped_reason": None})
 
             elapsed = round(time.time() - start_time, 2)
             summary = {"total": total, "sent": sent, "errors": errors, "time_taken": f"{elapsed} sec"}
@@ -735,7 +585,7 @@ def preview():
     """
     Returns a JSON preview for first N recipients including:
       - email fields: to, cc, bcc, subject
-      - body (plain), html (rendered), signature
+      - body (plain), html (body-only), signature_html (separate)
       - attachments: list of filenames (matching pdfs)
     """
     try:
@@ -764,17 +614,10 @@ def preview():
         # read uploaded pdf files (for matching) if any
         pdf_files = request.files.getlist("pdf_files")
         pdf_store: List[Tuple[str, bytes]] = []
-        if pdf_files and len(pdf_files) > MAX_PDF_FILES:
-            return jsonify({"ok": False, "error": f"Too many PDF files uploaded (max {MAX_PDF_FILES})."}), 400
-
         for f in pdf_files:
             if f and f.filename:
                 try:
-                    data = f.read()
-                    if len(data) > MAX_PDF_SIZE:
-                        logger.warning("Preview: PDF %s too large, skipping", f.filename)
-                        continue
-                    pdf_store.append((f.filename, data))
+                    pdf_store.append((f.filename, f.read()))
                 except Exception as e:
                     logger.warning("Could not read uploaded file %s: %s", f.filename, e)
 
@@ -828,19 +671,13 @@ def preview():
                     "cc": cc_list,
                     "bcc": bcc_list,
                     "signature": signature_to_use,
+                    "signature_html": _render_signature_to_html(signature_to_use),
                     "attachments": [],
                 })
                 continue
 
-            # build plain body and html alternative
-            full_body = build_personal_body(
-                body_template=body_template,
-                signature=signature_to_use,
-                smtp_email=smtp_email,
-                sender_name=sender_name,
-                emp_name=str(emp_name or ""),
-            )
-            full_html = build_personal_html(
+            # Use helper that returns body-only HTML and signature separately
+            plain_body, html_body_only, signature_html = _prepare_preview_body_and_signature(
                 body_template=body_template,
                 signature=signature_to_use,
                 smtp_email=smtp_email,
@@ -861,12 +698,14 @@ def preview():
                 "emp_name": str(emp_name or ""),
                 "to": str(to_email or ""),
                 "subject": subject,
-                "body": full_body,
-                "html": full_html,
+                "body": plain_body,
+                # html contains body-only (no signature)
+                "html": html_body_only,
                 "status": "OK",
                 "cc": cc_list,
                 "bcc": bcc_list,
                 "signature": signature_to_use,
+                "signature_html": signature_html,
                 "attachments": attachments,
             })
 
@@ -881,7 +720,6 @@ def preview():
 def send_single():
     """
     Endpoint to send only the first valid recipient from the uploaded employees file.
-    Uses the same form fields as index() POST: smtp_email, smtp_pass, sender_name, body, subject, pdf_files, cc, bcc, signature, use_saved_signature, save_default_signature, skip_if_no_pdf
     """
     try:
         purge_old_reports()
@@ -917,18 +755,10 @@ def send_single():
 
         pdf_files = request.files.getlist("pdf_files")
         pdf_store = []
-        if pdf_files and len(pdf_files) > MAX_PDF_FILES:
-            flash(f"Too many PDF files uploaded (max {MAX_PDF_FILES}).", "error")
-            return redirect(url_for("index"))
-
         for f in pdf_files:
             if f and f.filename:
                 try:
-                    data = f.read()
-                    if len(data) > MAX_PDF_SIZE:
-                        flash(f"File {f.filename} is too large (> {MAX_PDF_SIZE} bytes).", "error")
-                        continue
-                    pdf_store.append((f.filename, data))
+                    pdf_store.append((f.filename, f.read()))
                 except Exception as e:
                     logger.warning("Could not read uploaded file %s: %s", f.filename, e)
 
@@ -997,22 +827,13 @@ def send_single():
         sent = 0
         errors = 0
         report_rows = []
-
-        # decide whether to use SMTP or SendGrid
-        smtp_ok = smtp_reachable(SMTP_HOST, SMTP_PORT)
-        using_sendgrid = False
-        if not smtp_ok:
-            if SENDGRID_API_KEY:
-                using_sendgrid = True
-                logger.info("SMTP not reachable; using SendGrid for single-send fallback.")
-            else:
-                flash("Cannot reach SMTP server from this host. Configure SENDGRID_API_KEY in environment to use SendGrid as fallback.", "error")
-                return redirect(url_for("index"))
-
         try:
-            if using_sendgrid:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
+                server.starttls()
+                server.login(smtp_email, smtp_pass)
+
                 status = send_email_to_employee(
-                    server=None,
+                    server=server,
                     to_email=to_email,
                     emp_name=emp_name,
                     subject=subject,
@@ -1023,7 +844,6 @@ def send_single():
                     attachments=attachments_for_emp,
                     cc_list=cc_list,
                     bcc_list=bcc_list,
-                    use_sendgrid=True,
                 )
                 if status == "OK":
                     sent = 1
@@ -1031,33 +851,8 @@ def send_single():
                 else:
                     errors = 1
                     status_str = status
-            else:
-                with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
-                    server.starttls()
-                    server.login(smtp_email, smtp_pass)
 
-                    status = send_email_to_employee(
-                        server=server,
-                        to_email=to_email,
-                        emp_name=emp_name,
-                        subject=subject,
-                        body_template=body_template,
-                        signature=signature_to_use,
-                        smtp_email=smtp_email,
-                        sender_name=sender_name,
-                        attachments=attachments_for_emp,
-                        cc_list=cc_list,
-                        bcc_list=bcc_list,
-                        use_sendgrid=False,
-                    )
-                    if status == "OK":
-                        sent = 1
-                        status_str = "Sent"
-                    else:
-                        errors = 1
-                        status_str = status
-
-            report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str})
+                report_rows.append({"emp_name": str(emp_name or ""), "email": str(to_email or ""), "status": status_str, "pdf_attached": bool(attachments_for_emp), "skipped_reason": None})
 
             summary = {"total": 1, "sent": sent, "errors": errors, "time_taken": "single-send"}
             flash(f"Send single completed. Status: {status_str}", "success" if status_str == "Sent" else "error")
@@ -1115,7 +910,6 @@ def download_report(report_id):
             logger.exception("Could not write Excel with engine %s: %s", engine, e)
 
     try:
-        # choose a timestamped filename using the report's ts (if available) else current time
         ts = report.get("ts", time.time())
         timestr = time.strftime("%Y%m%d_%H%M%S", time.localtime(ts))
         if excel_written:
@@ -1153,6 +947,4 @@ def internal_server_error(e):
 
 
 if __name__ == "__main__":
-    # DEVELOPMENT: for production use gunicorn / uWSGI behind a reverse proxy (nginx).
-    # Example: gunicorn -w 4 -b 0.0.0.0:5000 send_mail_app:app
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
