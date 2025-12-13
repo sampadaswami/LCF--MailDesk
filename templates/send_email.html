@@ -118,8 +118,10 @@
       </div>
 
       <div class="card-header">
-        <h1 id="appTitle">{{ APP_NAME }}</h1>
+        <h1 id="appTitle" style="font-size:24px;">{{ APP_NAME }}</h1>
         <div class="header-line" aria-hidden="true"></div>
+        <!-- NEW: credit / designed-by line (placed before the tagline as requested) -->
+        <div class="credit-line">Designed for Lighthouse Communities Foundation | Developed by Sampada Swami</div>
         <div class="tagline">Upload Excel/CSV, optionally attach PDFs, and send personalised emails in one go.</div>
       </div>
 
@@ -393,24 +395,34 @@ document.addEventListener("DOMContentLoaded", function(){
     <span style="font-weight:400;"> (formerly known as Pune City Connect)</span>
   </div>
 
-  <div style="color:#374151;font-size:13px;margin-bottom:10px;">
-    <strong>Office:</strong>
-    The Lighthouse Complex, Off Bremen Chowk, Spicer College Road, Aundh, Pune - 411007, Maharashtra, India
+  <!-- Office Address (Blue + Clickable) -->
+  <div style="font-size:13px;margin-bottom:4px;">
+    <strong style="color:#000000;">Office:</strong>
+    <span style="color:#000000;">The Lighthouse Complex, Off Bremen Chowk, </span>
+    <a href="https://maps.app.goo.gl/8Ae6K1AvDEynmeNYA?g_st=iw"
+       target="_blank"
+       style="color:#2563eb;text-decoration:none;">
+      Spicer College Road, Aundh, Pune - 411007, Maharashtra, India
+    </a>
   </div>
 
-  <!-- Logo -->
-  <div style="margin:10px 0;">
-    <img src="https://lh3.googleusercontent.com/d/159K9oDZEJEE3U3sBsxzvla5Fv1J2e9sP"
-         alt="Lighthouse Logo"
-         height="80"
-         style="display:block;border:0;">
+  <!-- Lighthouse Logo (Clickable → Website) -->
+  <div style="margin:4px 0;">
+    <a href="https://lighthousecommunities.org/"
+       target="_blank"
+       style="display:inline-block;">
+      <img src="https://lh3.googleusercontent.com/d/1L8NL3Q5uCAQuNEVe3nmHO0XhXYFX8chc"
+           alt="Lighthouse Logo"
+           height="95"
+           style="display:block;border:0;">
+    </a>
   </div>
 
   <!-- States Row -->
-  <div style="margin-top:8px;font-size:13px;color:#000;">
+  <div style="margin-top:4px;font-size:13px;color:#000000;">
     <a href="https://maps.app.goo.gl/8Ae6K1AvDEynmeNYA?g_st=iw"
        style="color:#2563eb;text-decoration:none;" target="_blank">
-       Maharashtra
+      Maharashtra
     </a>
     | <span>Delhi</span>
     | <span>Odisha</span>
@@ -418,18 +430,43 @@ document.addEventListener("DOMContentLoaded", function(){
     | <span>Uttar Pradesh</span>
   </div>
 
-  <!-- Social Icons -->
-  <div style="margin-top:10px;">
-    <a href="https://www.linkedin.com/company/lcf-in/" style="text-decoration:none;margin-right:6px;">
-      <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" width="28">
-    </a>
-    <a href="https://www.instagram.com/lcf.in/" style="text-decoration:none;margin-right:6px;">
-      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" width="28">
-    </a>
-    <a href="https://www.youtube.com/@lcf_in" style="text-decoration:none;">
-      <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" width="28">
-    </a>
-  </div>
+<!-- Social Icons (Official Logos Only) -->
+<div style="margin-top:8px;">
+
+  <!-- LinkedIn (Official) -->
+  <a href="https://www.linkedin.com/company/lcf-in/"
+     target="_blank"
+     style="text-decoration:none;margin-right:8px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/145/145807.png"
+         width="31"
+         height="31"
+         alt="LinkedIn"
+         style="display:inline-block;border:0;">
+  </a>
+
+  <!-- Instagram (Official Gradient Circle) -->
+  <a href="https://www.instagram.com/lcf.in/"
+     target="_blank"
+     style="text-decoration:none;margin-right:8px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png"
+         width="30"
+         height="30"
+         alt="Instagram"
+         style="display:inline-block;border:0;">
+  </a>
+
+  <!-- YouTube (Official Red Circle) -->
+  <a href="https://www.youtube.com/@lcf_in"
+     target="_blank"
+     style="text-decoration:none;">
+    <img src="https://cdn-icons-png.flaticon.com/512/3670/3670147.png"
+         width="31"
+         height="31"
+         alt="YouTube"
+         style="display:inline-block;border:0;">
+  </a>
+
+</div>
 
 </div>
 <!-- END: Signature -->`;
