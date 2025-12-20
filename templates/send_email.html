@@ -145,7 +145,7 @@
         <div class="hint">Use your Gmail App Password (not your normal login password).</div>
 
         <label for="sender_name">Sender Name</label>
-        <input type="text" id="sender_name" name="sender_name" placeholder="Lighthouse Communities Foundation" value="{{ request.form.sender_name or 'Lighthouse Communities Foundation' }}">
+        <input type="text" id="sender_name" name="sender_name" placeholder="HR Team – Lighthouse Communities Foundation" value="{{ request.form.sender_name or 'HR Team – Lighthouse Communities Foundation' }}">
         <div class="hint">This name will appear in the "From" field.</div>
 
         <div class="section-title">Step 1 — Upload Employees File</div>
@@ -154,12 +154,12 @@
         <div class="hint">Must contain an <strong>email</strong> column. Optional: name/emp_name for {name} placeholder and PDF matching.</div>
 
         <div class="section-title">Step 2 — Upload PDFs (optional)</div>
-        <label for="pdf_files">PDF files (multiple allowed)</label>
+        <label for="pdf_files">PDF files (multiple allowed) "files such as Offer Letters, NDA Forms, Appointment Letters, & HR Policy Documents PDFs." </label>
         <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple>
         <div style="margin-top:8px;">
           <label style="display:inline-flex;align-items:center;gap:8px;">
             <input type="checkbox" name="skip_if_no_pdf" id="skip_if_no_pdf" {% if request.form.get('skip_if_no_pdf') == 'on' %}checked{% endif %}>
-            <span class="hint">Skip if no matching PDF found (otherwise send body-only).</span>
+            <span class="hint">Do not send email if employee document is missing (otherwise send body-only).</span>
           </label>
         </div>
 
@@ -636,3 +636,18 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 </body>
 </html>
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ APP_NAME }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* YOUR EXISTING CSS — UNCHANGED */
+    /* (same as you provided) */
+  </style>
+</head>
+
+
